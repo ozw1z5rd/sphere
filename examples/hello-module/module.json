@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "com.sphere.examples.hello",
+  "name": "Hello Module",
+  "version": "1.0.0",
+  "author": "Sphere",
+  "description": "Minimal MCP server example exposing a ping tool.",
+  "kind": "mcp",
+  "transport": {
+    "type": "stdio",
+    "command": ["python3", "${MODULE_DIR}/server.py"],
+    "cwd": "${MODULE_DIR}",
+    "healthCheck": { "method": "tools/list", "timeoutMs": 15000 }
+  },
+  "capabilities": ["tools"],
+  "permissions": {
+    "network": false,
+    "process": false
+  },
+  "autoStart": false
+}
