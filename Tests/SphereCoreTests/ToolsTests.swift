@@ -1,0 +1,144 @@
+import XCTest
+@testable import SphereCore
+@testable import SphereTools
+
+final class ToolHelpersTests: XCTestCase {
+    func testJSONPathSelector() throws {
+        let value = JSONValue.object([
+            "dependencies": .array([
+                .object(["url": .string("https://example.com/a.git"), "version": .string("1.0.0")]),
+                .object(["url": .string("https://example.com/b.git")]),
+            ]),
+            "name": .string("Sphere"),
+        ])
+
+        XCTAssertEqual(try StructuredData.select(value, selector: "name"), .string("Sphere"))
+        XCTAssertEqual(
+            try StructuredData.select(value, selector: "dependencies[1].url"),
+            .string("https://example.com/b.git")
+        )
+        XCTAssertThrowsError(try StructuredData.select(value, selector: "dependencies[9].url"))
+    }
+
+    func testLineSlice() {
+        let text = "one\ntwo\nthree\nfour"
+        XCTAssertEqual(FilesystemBroker.lineSlice(text, start: 2, end: 3), "     2\ttwo\n     3\tthree")
+    }
+
+    func testMagicByteSniffing() {
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        XCTAssertEqual(FileSniffer.sniff(png).kind, "png")
+        XCTAssertTrue(FileSniffer.sniff(png).isBinary)
+        XCTAssertEqual(FileSniffer.sniff(Data("hello world".utf8)).kind, "text")
+    }
+
+    func testUnifiedPatch() throws {
+        let original = "one\ntwo\nthree\n"
+        let patch = """
+        --- a/file.txt
+        +++ b/file.txt
+        @@ -1,3 +1,3 @@
+         one
+        -two
+        +TWO
+         three
+        """
+        let result = try UnifiedPatch.apply(patch, to: original)
+        XCTAssertEqual(result.hunks, 1)
+        XCTAssertEqual(result.text, "one\nTWO\nthree\n")
+    }
+
+    func testGitIgnoreMatching() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("sphere-gitignore-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try """
+        *.log
+        build/
+        !keep.log
+        """.write(to: root.appendingPathComponent(".gitignore"), atomically: true, encoding: .utf8)
+
+        let matcher = GitIgnoreMatcher(root: root)
+        XCTAssertTrue(matcher.isIgnored(relativePath: "app.log", isDirectory: false))
+        XCTAssertFalse(matcher.isIgnored(relativePath: "keep.log", isDirectory: false))
+        XCTAssertTrue(matcher.isIgnored(relativePath: "build", isDirectory: true))
+        XCTAssertTrue(matcher.isIgnored(relativePath: "build/out.o", isDirectory: false))
+        XCTAssertFalse(matcher.isIgnored(relativePath: "src/main.swift", isDirectory: false))
+    }
+
+    func testYAMLParser() throws {
+        let yaml = """
+        name: Sphere
+        dependencies:
+          - url: https://example.com/a.git
+            version: 1.0
+          - url: https://example.com/b.git
+        """
+        var parser = YAMLParser(text: yaml)
+        let value = try parser.parse()
+        XCTAssertEqual(try StructuredData.select(value, selector: "name"), .string("Sphere"))
+        XCTAssertEqual(try StructuredData.select(value, selector: "dependencies[0].version"), .number(1.0))
+        XCTAssertEqual(
+            try StructuredData.select(value, selector: "dependencies[1].url"),
+            .string("https://example.com/b.git")
+        )
+    }
+
+    func testDuckDuckGoResultParsing() {
+        let html = """
+        <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fa&amp;rut=x">Example <b>A</b></a>
+        <a class="result__snippet" href="#">An <b>example</b> snippet &amp; more</a>
+        """
+        let results = WebToolProvider.parseDuckDuckGo(html, limit: 5)
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results.first?.title, "Example A")
+        XCTAssertEqual(results.first?.url, "https://example.com/a")
+        XCTAssertEqual(results.first?.snippet, "An example snippet & more")
+    }
+
+    func testExecRunsAllowlistedCommandInSandbox() async throws {
+        let database = try Database(path: Database.transient)
+        try Migrations.migrate(database)
+        let store = PermissionStore(database: database)
+        let engine = PermissionEngine(store: store)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("sphere-exec-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try store.addPathGrant(PathGrant(path: root.path, mode: .readOnly, recursive: true))
+
+        let audit = AuditLog(fileURL: root.appendingPathComponent("audit.log"))
+        let exec = ExecToolProvider(engine: engine, audit: audit, enabled: true, allowlist: ["ls"])
+        let outcome = try await exec.invoke(
+            tool: "exec",
+            arguments: .object([
+                "argv": .array([.string("ls")]),
+                "cwd": .string(root.path),
+            ])
+        )
+        XCTAssertFalse(outcome.isError)
+        XCTAssertTrue(outcome.text.contains("exit: 0"))
+
+        let disabled = ExecToolProvider(engine: engine, audit: audit, enabled: false, allowlist: ["ls"])
+        do {
+            _ = try await disabled.invoke(
+                tool: "exec",
+                arguments: .object([
+                    "argv": .array([.string("ls")]),
+                    "cwd": .string(root.path),
+                ])
+            )
+            XCTFail("expected disabled exec to throw")
+        } catch {
+            // expected
+        }
+    }
+
+    func testExecAllowlistAndReadOnlyDetection() {
+        XCTAssertTrue(ExecToolProvider.isAllowed(argv: ["git", "status"], allowlist: ["git status", "ls"]))
+        XCTAssertFalse(ExecToolProvider.isAllowed(argv: ["git", "push"], allowlist: ["git status", "ls"]))
+        XCTAssertTrue(ExecToolProvider.isReadOnly(argv: ["git", "diff", "--stat"]))
+        XCTAssertFalse(ExecToolProvider.isReadOnly(argv: ["swift", "build"]))
+        XCTAssertTrue(ExecToolProvider.sandboxProfile(grantedRoot: URL(fileURLWithPath: "/tmp/x"), allowWrites: true).contains("deny network*"))
+        XCTAssertFalse(ExecToolProvider.sandboxProfile(grantedRoot: URL(fileURLWithPath: "/tmp/x"), allowWrites: false).contains("subpath \"/tmp/x\""))
+    }
+}

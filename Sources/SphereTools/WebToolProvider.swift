@@ -60,10 +60,30 @@ public final class WebToolProvider: ToolProvider {
                     "required": .array([.string("url")]),
                 ])
             ),
+            ToolDefinition(
+                name: ToolDefinition.namespaced(moduleId: moduleId, toolName: "web_search"),
+                originalName: "web_search",
+                moduleId: moduleId,
+                description: "Search the web (DuckDuckGo HTML results) and return titles, URLs and snippets. Subject to the user's ban list.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "query": .object(["type": .string("string")]),
+                        "max_results": .object([
+                            "type": .string("integer"),
+                            "description": .string("Number of results (default 5, max 10)."),
+                        ]),
+                    ]),
+                    "required": .array([.string("query")]),
+                ])
+            ),
         ]
     }
 
     public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+        if tool == "web_search" {
+            return try await search(arguments)
+        }
         guard tool == "web_fetch" else {
             throw SphereError.protocolError("unknown web tool '\(tool)'")
         }
@@ -133,6 +153,130 @@ public final class WebToolProvider: ToolProvider {
             text: header + body,
             isError: !(200..<400).contains(http.statusCode)
         )
+    }
+
+    private func search(_ arguments: JSONValue) async throws -> ToolOutcome {
+        guard let query = arguments["query"]?.stringValue,
+              !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw SphereError.protocolError("missing argument 'query'")
+        }
+        let count = min(max(arguments["max_results"]?.numberValue.map(Int.init) ?? 5, 1), 10)
+        guard var components = URLComponents(string: "https://html.duckduckgo.com/html/") else {
+            throw SphereError.protocolError("could not build the search URL")
+        }
+        components.queryItems = [URLQueryItem(name: "q", value: query)]
+        guard let url = components.url, let host = url.host else {
+            throw SphereError.protocolError("could not build the search URL")
+        }
+        try await authorize(url: url, host: host)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+            forHTTPHeaderField: "User-Agent"
+        )
+        request.setValue("text/html,application/xhtml+xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw SphereError.protocolError("missing HTTP response")
+        }
+        if let finalURL = http.url, finalURL != url {
+            try await authorize(url: finalURL, host: finalURL.host ?? host)
+        }
+        guard (200..<400).contains(http.statusCode) else {
+            return ToolOutcome(
+                text: "Search failed: HTTP \(http.statusCode)",
+                isError: true
+            )
+        }
+
+        let html = String(data: data, encoding: .utf8) ?? ""
+        let results = Self.parseDuckDuckGo(html, limit: count)
+        audit.write("web", "SEARCH '\(query)' -> \(results.count) results")
+
+        guard !results.isEmpty else {
+            return ToolOutcome(text: "No results found for '\(query)'.")
+        }
+        let body = results.enumerated().map { index, result -> String in
+            let snippet = result.snippet.isEmpty ? "" : "\n   \(result.snippet)"
+            return "\(index + 1). \(result.title)\n   \(result.url)\(snippet)"
+        }.joined(separator: "\n\n")
+        return ToolOutcome(
+            text: "Search: \(query)\nResults: \(results.count)\n\n\(body)",
+            raw: .object([
+                "query": .string(query),
+                "results": .array(results.map { result in
+                    .object([
+                        "title": .string(result.title),
+                        "url": .string(result.url),
+                        "snippet": .string(result.snippet),
+                    ])
+                }),
+            ])
+        )
+    }
+
+    struct SearchResult {
+        var title: String
+        var url: String
+        var snippet: String
+    }
+
+    static func parseDuckDuckGo(_ html: String, limit: Int) -> [SearchResult] {
+        let linkRegex = try? NSRegularExpression(
+            pattern: "<a[^>]*class=\"[^\"]*result__a[^\"]*\"[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>",
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        )
+        let snippetRegex = try? NSRegularExpression(
+            pattern: "<a[^>]*class=\"[^\"]*result__snippet[^\"]*\"[^>]*>(.*?)</a>",
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        )
+        let nsHTML = html as NSString
+        let links = linkRegex?.matches(in: html, range: NSRange(location: 0, length: nsHTML.length)) ?? []
+        let snippets = snippetRegex?.matches(in: html, range: NSRange(location: 0, length: nsHTML.length)) ?? []
+
+        var results: [SearchResult] = []
+        for (index, match) in links.enumerated() {
+            guard results.count < limit else { break }
+            let href = nsHTML.substring(with: match.range(at: 1))
+            let title = decodeEntities(stripTags(nsHTML.substring(with: match.range(at: 2))))
+            let url = resolveDuckDuckGoURL(href)
+            guard !title.isEmpty, !url.isEmpty, !url.hasPrefix("https://duckduckgo.com/y.js") else { continue }
+            var snippet = ""
+            if index < snippets.count {
+                snippet = decodeEntities(stripTags(nsHTML.substring(with: snippets[index].range(at: 1))))
+            }
+            results.append(SearchResult(title: title, url: url, snippet: snippet))
+        }
+        return results
+    }
+
+    private static func resolveDuckDuckGoURL(_ href: String) -> String {
+        var value = href
+        if value.hasPrefix("//") { value = "https:" + value }
+        if let components = URLComponents(string: value),
+           let target = components.queryItems?.first(where: { $0.name == "uddg" })?.value {
+            return target
+        }
+        return value
+    }
+
+    private static func stripTags(_ value: String) -> String {
+        value.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func decodeEntities(_ value: String) -> String {
+        var text = value
+        let entities: [String: String] = [
+            "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'", "&nbsp;": " ",
+        ]
+        for (entity, replacement) in entities {
+            text = text.replacingOccurrences(of: entity, with: replacement)
+        }
+        return text
     }
 
     private func authorize(url: URL, host: String) async throws {

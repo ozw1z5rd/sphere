@@ -12,6 +12,11 @@ struct SettingsView: View {
             .tabItem { Label("General", systemImage: "gearshape") }
 
             ScrollView {
+                ToolsSection().padding(16)
+            }
+            .tabItem { Label("Tools", systemImage: "wrench.and.screwdriver") }
+
+            ScrollView {
                 ProviderSection().padding(16)
             }
             .tabItem { Label("Provider", systemImage: "cpu") }
@@ -70,6 +75,89 @@ private struct GeneralSection: View {
             .padding(6)
         }
     }
+}
+
+private struct ToolsSection: View {
+    @EnvironmentObject var model: AppModel
+    @State private var allowlistText = ""
+    @State private var saved = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            GroupBox("Sandboxed exec") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Enable sandboxed exec", isOn: Binding(
+                        get: { model.config.execEnabled },
+                        set: { enabled in
+                            model.setExecEnabled(enabled)
+                            saved = false
+                        }
+                    ))
+
+                    Text("Exec runs inside a granted directory with no network access and writes limited to the granted root. Commands that can write require a read-write grant.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Divider()
+
+                    Text("Allowed command prefixes (one per line). argv is passed directly, without a shell.")
+                        .font(.caption.weight(.semibold))
+
+                    TextEditor(text: $allowlistText)
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(minHeight: 150)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.secondary.opacity(0.3))
+                        )
+
+                    HStack(spacing: 8) {
+                        Button("Save allowlist") {
+                            model.setExecAllowlist(parsedAllowlist)
+                            saved = true
+                        }
+                        if saved {
+                            Text("Saved")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+            }
+
+            GroupBox("Built-in tools") {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Self.builtInTools, id: \.self) { tool in
+                        Text(tool)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+            }
+        }
+        .onAppear {
+            allowlistText = model.effectiveExecAllowlist.joined(separator: "\n")
+        }
+    }
+
+    private var parsedAllowlist: [String] {
+        allowlistText.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+    }
+
+    private static let builtInTools = [
+        "sphere.filesystem: fs_read, fs_write, fs_list, fs_glob, fs_grep, fs_stat, fs_read_bytes, fs_edit, fs_select, image_inspect",
+        "sphere.git: git (status, diff, log, show, blame)",
+        "sphere.system: system_info, clipboard_read, clipboard_write",
+        "sphere.web: web_fetch, web_search",
+        "sphere.exec: exec (sandboxed)",
+    ]
 }
 
 private struct ProviderSection: View {

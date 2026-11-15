@@ -55,8 +55,10 @@ public actor ToolRouter {
             if effect == "deny" {
                 throw SphereError.permissionDenied("tool '\(name)' is denied by policy")
             }
-            if effect == "ask", let approvalHandler, await approvalHandler(definition) == false {
-                throw SphereError.permissionDenied("tool '\(name)' was not approved")
+            if effect == "ask" {
+                guard let approvalHandler, await approvalHandler(definition) else {
+                    throw SphereError.permissionDenied("tool '\(name)' requires approval and no approval handler is available")
+                }
             }
         }
 

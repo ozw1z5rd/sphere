@@ -114,6 +114,10 @@ public struct AppConfig: Codable, Sendable {
     public var userFontSize: Double
     /// UI language code (`en`, `it`); `nil` follows the system language.
     public var language: String?
+    /// Enables the sandboxed exec tool.
+    public var execEnabled: Bool
+    /// Allowed command prefixes for exec (e.g. `git status`, `ls`).
+    public var execAllowlist: [String]
     public var assistantFontName: String?
     public var assistantFontSize: Double
 
@@ -131,6 +135,8 @@ public struct AppConfig: Codable, Sendable {
         userFontName: String? = nil,
         userFontSize: Double = 13,
         language: String? = nil,
+        execEnabled: Bool = false,
+        execAllowlist: [String] = [],
         assistantFontName: String? = nil,
         assistantFontSize: Double = 13
     ) {
@@ -147,6 +153,8 @@ public struct AppConfig: Codable, Sendable {
         self.userFontName = userFontName
         self.userFontSize = userFontSize
         self.language = language
+        self.execEnabled = execEnabled
+        self.execAllowlist = execAllowlist
         self.assistantFontName = assistantFontName
         self.assistantFontSize = assistantFontSize
     }
@@ -156,7 +164,7 @@ public struct AppConfig: Codable, Sendable {
         case screenCaptureEnabled, debugHTTPLogging, speechEnabled, speechAutoSpeak
         case speechVoiceIdentifier, speechRate
         case userFontName, userFontSize, assistantFontName, assistantFontSize
-        case language
+        case language, execEnabled, execAllowlist
     }
 
     public init(from decoder: Decoder) throws {
@@ -175,6 +183,8 @@ public struct AppConfig: Codable, Sendable {
         self.userFontName = try container.decodeIfPresent(String.self, forKey: .userFontName)
         self.userFontSize = try container.decodeIfPresent(Double.self, forKey: .userFontSize) ?? 13
         self.language = try container.decodeIfPresent(String.self, forKey: .language)
+        self.execEnabled = try container.decodeIfPresent(Bool.self, forKey: .execEnabled) ?? false
+        self.execAllowlist = try container.decodeIfPresent([String].self, forKey: .execAllowlist) ?? []
         self.assistantFontName = try container.decodeIfPresent(String.self, forKey: .assistantFontName)
         self.assistantFontSize = try container.decodeIfPresent(Double.self, forKey: .assistantFontSize) ?? 13
     }

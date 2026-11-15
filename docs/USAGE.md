@@ -27,8 +27,8 @@ modules created from the CLI are visible in the GUI and vice versa.
 ## 2. Configuring an LLM provider
 
 Open **Sphere → Settings…** (`Cmd+,`). Settings are organized into
-tabs: **General**, **Provider**, **Voce** (Voice), **Aspetto** (Appearance),
-**Diagnostica** (Diagnostics), **Knowledge**, **Storage**.
+tabs: **General**, **Tools**, **Provider**, **Voce** (Voice), **Aspetto**
+(Appearance), **Diagnostica** (Diagnostics), **Knowledge**, **Storage**.
 
 The **General** tab sets the interface **Language**: *System (default)*,
 *Italiano* or *English*. The change applies immediately to the whole UI (the
@@ -207,6 +207,33 @@ The GUI has the **File Access** tab; the CLI has `grant`.
 - GUI: trash can next to the grant.
 - CLI: `swift run sphere-cli grant remove <id>` (the id is shown by `grant list`).
 
+### Built-in tools
+
+The broker exposes more than plain read/write:
+
+| Tool | Purpose |
+|---|---|
+| `fs_read` | Read text; optional `start_line`/`end_line`. |
+| `fs_write` | Write text. |
+| `fs_list` / `fs_glob` | List a folder / match globs. |
+| `fs_grep` | Regex search with binary awareness, context lines, counts and `.gitignore` support (best-effort). |
+| `fs_stat` | Size, mtime, mode and type sniffed from magic bytes. |
+| `fs_read_bytes` | Hex/base64 slice of a binary file (max 4 KB). |
+| `fs_edit` | Search/replace or unified diff (`apply-patch`) edit. |
+| `fs_select` | JSON/YAML/plist path selector, or `lines:START-END` for text such as `Package.swift`. |
+| `image_inspect` | Image format, dimensions, DPI, minimal EXIF and optional PNG thumbnail. |
+| `git` | Read-only `status`, `diff`, `log`, `show`, `blame` in a granted path. |
+| `system_info` | Date, OS, host, user and granted roots. |
+| `clipboard_read` / `clipboard_write` | System clipboard as text. |
+| `web_search` | DuckDuckGo HTML search results (subject to the ban list). |
+| `exec` | Opt-in sandboxed command (argv allowlist, no shell, timeout, no network). |
+
+`exec` is disabled by default. Enable it and edit the command allowlist in
+**Settings → Tools**. Commands that can write require an `RW` grant; read-only
+inspections work with `RO`. The child process runs under `sandbox-exec`, with
+network denied and writes limited to the granted root; see
+[PERMISSIONS.md](PERMISSIONS.md).
+
 ### Important note
 
 The built-in filesystem broker (`sphere.filesystem`) is the only way to have
@@ -249,6 +276,9 @@ is converted to text by default.
 - Name for the model: `sphere_web_web_fetch` (module `sphere.web`, tool
   `web_fetch`).
 - Arguments: `url`, `format` (`text` or `raw`), `max_bytes`.
+- `web_search` (query, `max_results`) uses DuckDuckGo's HTML endpoint and
+  returns titles, URLs and snippets. Search requests are checked against the
+  same ban list and recorded in the Network tab.
 - Every request is recorded in the **Network** tab.
 - Ban rules are checked **before** the request and again
   on the final URL after any redirects.

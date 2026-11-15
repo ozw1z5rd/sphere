@@ -12,7 +12,7 @@ knowledge base. No external dependencies, only system SDKs.
 SphereCore        models, SQLite, migrations, grants, network rules, manifest, installer
 SphereLLM         OpenAI-compatible and Anthropic providers, SSE streaming
 SphereMCP         stdio MCP client (JSON-RPC), module process host
-SphereTools       filesystem broker, web fetch, ToolProvider, ToolRouter
+SphereTools       filesystem, web, git, system and exec providers, ToolRouter
 SphereScreen      ScreenCaptureKit, window allowlist
 SphereKnowledge   KnowledgeProvider contract + stub
 SphereSpeech      text-to-speech (AVSpeechSynthesizer)
@@ -50,7 +50,7 @@ Database (SQLite) ─ Migrations
 
 ConfigStore + SecretStore (Keychain import only) ── LLMProviderFactory
 MCPModuleHost ── MCPClient (one per module) ── StdioMCPTransport
-ToolRouter (broker + web + MCP catalog) ── AgentRunner
+ToolRouter (filesystem + web + git + system + exec + MCP catalog) ── AgentRunner
 ScreenCaptureService + ScreenAllowlist
 SpeechService (AVSpeechSynthesizer)
 KnowledgeProvider (stub)
@@ -95,6 +95,18 @@ UI/CLI
 
 Tool names: normalized `<module>_<tool>`. The catalog is aggregated by
 `ToolRouter.definitions()`.
+
+### Built-in providers
+
+- `sphere.filesystem`: text/binary reads, writes, glob/grep, stat, edits,
+  JSON/YAML/plist selectors, image metadata.
+- `sphere.web`: `web_fetch` and `web_search` (DuckDuckGo HTML), behind the
+  network ban list.
+- `sphere.git`: read-only status/diff/log/show/blame via `/usr/bin/git`.
+- `sphere.system`: `system_info` and clipboard read/write.
+- `sphere.exec`: opt-in argv-only sandboxed command execution. Child processes
+  run under `sandbox-exec` with network denied and writes limited to the
+  granted root; see [PERMISSIONS.md](PERMISSIONS.md).
 
 ## MCP client (in-house)
 

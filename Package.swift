@@ -36,7 +36,13 @@ let package = Package(
         ),
         .target(
             name: "SphereTools",
-            dependencies: ["SphereCore", "SphereMCP"]
+            dependencies: ["SphereCore", "SphereMCP"],
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("ImageIO"),
+                .linkedFramework("CoreGraphics"),
+                .linkedFramework("UniformTypeIdentifiers"),
+            ]
         ),
         .target(
             name: "SphereScreen",
@@ -106,7 +112,7 @@ let package = Package(
         ),
         .testTarget(
             name: "SphereCoreTests",
-            dependencies: ["SphereCore", "SphereLLM"]
+            dependencies: ["SphereCore", "SphereLLM", "SphereTools"]
         ),
     ]
 )

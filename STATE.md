@@ -42,7 +42,7 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 ## 3. Current status
 
 - `swift build` → **OK**
-- `swift test` → **29 tests, 0 failures**
+- `swift test` → **41 tests, 0 failures**
 - App bundle: `dist/Sphere.app` (valid ad-hoc signature)
 - Launch: `./scripts/build-app.sh release --open`
 - At the time of the last update the app is running.
@@ -87,7 +87,11 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 - Packaging: `scripts/package-module.sh`.
 
 **File access**
-- Built-in filesystem broker (`sphere.filesystem`): `fs_read/write/list/glob/grep`.
+- Built-in filesystem broker (`sphere.filesystem`): `fs_read` (line range),
+  `fs_write`, `fs_list`, `fs_glob`, `fs_grep` (binary report, context, counts,
+  `.gitignore`), `fs_stat` (magic-byte type), `fs_read_bytes`, `fs_edit`
+  (replace/unified patch), `fs_select` (JSON/YAML/plist selector or line range),
+  `image_inspect` (metadata + optional thumbnail).
 - Recursive RO/RW grants with read/write counters and audit.
 - UI: **File Access** tab, 1/3 (grants) – 2/3 (log) split.
 
@@ -97,7 +101,13 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 - TCC Screen Recording is per-app: per-window granularity is application-level.
 
 **Network**
-- Built-in `web_fetch` tool (`sphere.web`), HTML→text, size limits.
+- Built-in `web_fetch` and `web_search` (DuckDuckGo HTML) tools (`sphere.web`),
+  HTML→text, size limits.
+- Read-only git tools (`sphere.git`): status/diff/log/show/blame.
+- System tools (`sphere.system`): `system_info`, clipboard read/write.
+- **Sandboxed exec** (`sphere.exec`, opt-in from Settings → Tools): argv
+  allowlist, no shell, granted cwd, timeout, no network, writes limited to the
+  granted root via `sandbox-exec`.
 - **Default allow** ban list: URL (prefix), domain (+subdomains), IP/CIDR
   (with DNS resolution). Checked before the request and on the final URL.
 - Request audit in `network_events`; block counter per rule.
@@ -163,14 +173,15 @@ Sources/
                     SecretStore, Keychain (import only), AuditLog (OSLog)
   SphereLLM/        OpenAI-compatible + Anthropic providers, GenerationOptions
   SphereMCP/        MCPClient, StdioMCPTransport, MCPModuleHost
-  SphereTools/      FilesystemBroker, WebToolProvider, ToolRouter
+  SphereTools/      FilesystemBroker, WebToolProvider, GitToolProvider,
+                    SystemToolProvider, ExecToolProvider, ToolRouter
   SphereScreen/     ScreenCaptureService, ScreenAllowlist
   SphereKnowledge/  KnowledgeProvider + stub
   SphereSpeech/     SpeechService (AVSpeechSynthesizer)
   SphereRuntime/    SphereRuntime (wiring), AgentRunner
   SphereApp/        SwiftUI GUI
   SphereCLI/        CLI
-Tests/SphereCoreTests/SphereCoreTests.swift   (29 tests)
+Tests/SphereCoreTests/SphereCoreTests.swift   (41 tests)
 examples/hello-module/                        example MCP module
 scripts/                                      build-app, package-module, icon
 Support/Info.plist, Support/Sphere.icns
@@ -252,8 +263,8 @@ Keychain service: com.sphere.app (one-time import only)
 
 ### Phase 2 (coding agent + knowledge base)
 - Broker: `fs_edit` with diff, semantic search, binary/image support.
-- `shell/exec` tool with explicit approval, cwd, timeout.
-- `sandbox-exec` per module (or sandboxed helper) for real path enforcement.
+- `sandbox-exec` per module (or sandboxed helper) for real path enforcement
+  (`sphere.exec` already sandboxes its own child processes).
 - Knowledge base: FTS5 → local embeddings (`NLEmbedding`/Core ML/MLX) + UI
   for collections/ingest/reindex.
 - Editor policy tool (`allow/ask/deny`) in the UI.
@@ -276,7 +287,7 @@ Keychain service: com.sphere.app (one-time import only)
 ## 9. How to resume
 
 1. `cd sphere`
-2. `swift test` to confirm 29/29.
+2. `swift test` to confirm 41/41.
 3. `./scripts/build-app.sh release --open` to launch the app.
 4. Read `docs/USAGE.md` for usage, `docs/ARCHITECTURE.md` for the design.
 5. Pick an item from section 8 and proceed.

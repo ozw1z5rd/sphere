@@ -752,6 +752,22 @@ public final class AppModel: ObservableObject {
         saveConfig()
     }
 
+    // MARK: - Tools
+
+    public var effectiveExecAllowlist: [String] {
+        config.execAllowlist.isEmpty ? ExecToolProvider.defaultAllowlist : config.execAllowlist
+    }
+
+    public func setExecEnabled(_ enabled: Bool) {
+        config.execEnabled = enabled
+        saveConfig()
+    }
+
+    public func setExecAllowlist(_ allowlist: [String]) {
+        config.execAllowlist = allowlist
+        saveConfig()
+    }
+
     public func saveConfig() {
         guard let runtime else { return }
         do {

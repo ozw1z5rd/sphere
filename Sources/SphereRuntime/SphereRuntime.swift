@@ -23,6 +23,9 @@ public final class SphereRuntime: @unchecked Sendable {
     public let networkStore: NetworkStore
     public let networkPolicy: NetworkPolicy
     public let web: WebToolProvider
+    public let git: GitToolProvider
+    public let system: SystemToolProvider
+    public let exec: ExecToolProvider
     public let host: MCPModuleHost
     public let router: ToolRouter
     public let screen: ScreenCaptureService
@@ -50,8 +53,16 @@ public final class SphereRuntime: @unchecked Sendable {
         networkStore = NetworkStore(database: database)
         networkPolicy = NetworkPolicy(store: networkStore)
         web = WebToolProvider(policy: networkPolicy, store: networkStore, audit: audit)
+        git = GitToolProvider(engine: engine, audit: audit)
+        system = SystemToolProvider(permissions: permissions, audit: audit)
+        exec = ExecToolProvider(
+            engine: engine,
+            audit: audit,
+            enabled: config.execEnabled,
+            allowlist: config.execAllowlist.isEmpty ? ExecToolProvider.defaultAllowlist : config.execAllowlist
+        )
         host = MCPModuleHost()
-        router = ToolRouter(host: host, providers: [broker, web], policy: config.toolPolicy)
+        router = ToolRouter(host: host, providers: [broker, web, git, system, exec], policy: config.toolPolicy)
 
         screen = ScreenCaptureService(audit: audit)
         allowlist = ScreenAllowlist(store: permissions)
@@ -64,6 +75,10 @@ public final class SphereRuntime: @unchecked Sendable {
     public func saveConfig(_ updated: AppConfig) throws {
         try configStore.save(updated)
         config = updated
+        exec.update(
+            enabled: updated.execEnabled,
+            allowlist: updated.execAllowlist.isEmpty ? ExecToolProvider.defaultAllowlist : updated.execAllowlist
+        )
     }
 
     public func applyPolicy() async {

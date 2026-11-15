@@ -18,7 +18,7 @@ plug-in contract for the knowledge base.
 
 ```bash
 swift build                 # compile everything
-swift test                  # 29 tests (manifest, policy, store, installer)
+swift test                  # 41 tests (manifest, policy, store, tools, installer)
 swift run Sphere            # launch the GUI app
 swift run sphere-cli help   # launch the CLI
 ```
@@ -95,7 +95,7 @@ Sources/
   SphereCore/      models, SQLite, migrations, grants, manifest, installer
   SphereLLM/       OpenAI-compatible + Anthropic providers, streaming
   SphereMCP/       stdio MCP client (JSON-RPC), module host
-  SphereTools/     filesystem broker, tool router
+  SphereTools/     filesystem broker, git/system/exec tools, tool router
   SphereScreen/    ScreenCaptureKit + window allowlist
   SphereKnowledge/ knowledge base contract + stub
   SphereSpeech/    text-to-speech (AVSpeechSynthesizer)
@@ -106,6 +106,25 @@ Tests/SphereCoreTests/
 examples/hello-module/    example MCP module (Python, zero dependencies)
 docs/
 ```
+
+## Built-in tools
+
+Besides MCP modules, Sphere ships in-process tools:
+
+- **Files**: `fs_read` (optional line range), `fs_write`, `fs_list`, `fs_glob`,
+  `fs_grep` (binary-aware, context lines, counts, `.gitignore`), `fs_stat`
+  (size/mtime/mode/magic-byte type), `fs_read_bytes` (hex/base64, max 4 KB),
+  `fs_edit` (search/replace or unified patch) and `fs_select` (JSON/YAML/plist
+  path selector, or `lines:START-END` for text such as `Package.swift`).
+- **Images**: `image_inspect` (format, dimensions, DPI, minimal EXIF, optional
+  PNG thumbnail).
+- **Git (read-only)**: `git status|diff|log|show|blame` inside a granted path.
+- **System**: `system_info` (date, OS, host, granted roots) and clipboard
+  read/write.
+- **Web**: `web_fetch` plus `web_search` (DuckDuckGo HTML results).
+- **Exec (opt-in)**: `exec` runs an allowlisted argv (no shell) inside a
+  granted directory, with a timeout, no network and writes limited to the
+  granted root via `sandbox-exec`. Enable it in **Settings → Tools**.
 
 ## Principles
 

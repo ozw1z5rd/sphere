@@ -203,3 +203,12 @@
 "Voce (text-to-speech)" = "Voce (text-to-speech)";
 "Font" = "Font";
 "Internet" = "Internet";
+
+"Tools" = "Strumenti";
+"Sandboxed exec" = "Esecuzione sandbox";
+"Enable sandboxed exec" = "Abilita esecuzione sandbox";
+"Exec runs inside a granted directory with no network access and writes limited to the granted root. Commands that can write require a read-write grant." = "Exec viene eseguito in una cartella concessa senza accesso alla rete e con scritture limitate alla root concessa. I comandi che possono scrivere richiedono un grant in lettura-scrittura.";
+"Allowed command prefixes (one per line). argv is passed directly, without a shell." = "Prefissi di comando consentiti (uno per riga). argv viene passato direttamente, senza shell.";
+"Save allowlist" = "Salva allowlist";
+"Saved" = "Salvato";
+"Built-in tools" = "Strumenti integrati";

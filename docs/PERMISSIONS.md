@@ -10,7 +10,10 @@ cases the principle is: default deny, explicit consent, audit.
 1. The user grants a path (`RO` or `RW`, recursive) from the **File Access** tab
    or with `grant add`.
 2. The **built-in filesystem broker** (`sphere.filesystem`, in-process MCP)
-   exposes the `fs_read`, `fs_write`, `fs_list`, `fs_glob`, `fs_grep` tools.
+   exposes `fs_read`, `fs_write`, `fs_list`, `fs_glob`, `fs_grep`, `fs_stat`,
+   `fs_read_bytes`, `fs_edit`, `fs_select` and `image_inspect`. Read-only git
+   (`sphere.git`) and system/clipboard tools (`sphere.system`) use the same
+   grant checks.
 3. Every request goes through `PermissionEngine`:
    - normalizes the path (`~`, relative paths, symlinks);
    - checks that it falls within a grant;
@@ -39,10 +42,35 @@ Real per-module enforcement will arrive in Phase 2 with a `sandbox-exec`
 profile (or sandboxed helper) to limit the child process's writes to the
 granted paths.
 
+## Sandboxed exec
+
+`sphere.exec` is the most powerful built-in tool and is **disabled by
+default**. When enabled from **Settings → Tools**:
+
+- commands are passed as an `argv` array (never through a shell);
+- the command must match the user's allowlist (prefix match, e.g. `git status`);
+- the working directory must be inside a granted root;
+- read-only commands (`git status`, `ls`, `cat`, `rg`, …) need an `RO` grant;
+  commands that may write need an `RW` grant;
+- a hard timeout (default 30 s, max 120 s) and output cap apply;
+- the child runs under `sandbox-exec` with `network*` denied and `file-write*`
+  limited to the granted root, `/private/tmp`, `/private/var/folders` and
+  `/dev/{null,stdout,stderr,zero}`;
+- `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.docker`, `~/.netrc` and Sphere's own
+  Application Support folder are read-protected;
+- the environment is scrubbed of secret-looking variables and `HOME` points to
+  a temporary directory.
+
+Limitations: `sandbox-exec` is deprecated; reads outside the denied paths are
+still possible, so review the allowlist and keep grants narrow. The sandbox
+protects writes and network, not confidentiality of every readable file.
+
 ### Best practices
 
 - Grant the narrowest possible folder, not `~`.
 - Use `RO` until you need to write.
+- Keep the exec allowlist minimal; prefer read-only commands and build/test
+  prefixes you actually use.
 - Periodically check the counters and the timeline: unexpected access is a
   signal.
 - Revoke grants that are no longer needed.
@@ -107,6 +135,8 @@ bodies are converted to text unless `format: raw`.
 | Risk | Current mitigation | Future phase |
 |---|---|---|
 | Module reads non-granted files | Broker for modules that use it; audit | per-module sandbox-exec |
+| Exec writes outside the grant | `sandbox-exec` write deny + RW grant check | dedicated helper |
+| Exec network access | `sandbox-exec` `deny network*` | — |
 | Module captures the screen secretly | It has no access to the internal screen tools | sandboxed helper |
 | Path traversal / symlink | Normalization and prefix comparison | dedicated tests |
 | API key in plaintext | Keychain | — |
