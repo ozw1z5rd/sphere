@@ -114,6 +114,7 @@ public final class ExecToolProvider: ToolProvider {
         let home = FileManager.default.temporaryDirectory
             .appendingPathComponent("sphere-exec-\(UUID().uuidString)", isDirectory: true)
         try? FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: home.appendingPathComponent("tmp"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: home) }
 
         let profile = Self.sandboxProfile(grantedRoot: cwd, allowWrites: needsWrite)

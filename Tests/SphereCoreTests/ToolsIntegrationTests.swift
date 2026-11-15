@@ -69,6 +69,53 @@ final class ToolsIntegrationTests: XCTestCase {
         XCTAssertTrue(outcome.text.contains("blob.bin"))
     }
 
+    func testGitStatusAndLogInSandbox() async throws {
+        guard FileManager.default.isExecutableFile(atPath: "/usr/bin/git") else {
+            throw XCTSkip("git is not installed")
+        }
+        let (_, root) = try makeBroker()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        func git(_ args: [String]) throws {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            process.arguments = ["-C", root.path] + args
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            try process.run()
+            process.waitUntilExit()
+            XCTAssertEqual(process.terminationStatus, 0)
+        }
+        try git(["init", "-q"])
+        try git(["config", "user.email", "test@example.com"])
+        try git(["config", "user.name", "Test"])
+        try "hello\n".write(to: root.appendingPathComponent("file.txt"), atomically: true, encoding: .utf8)
+        try git(["add", "file.txt"])
+        try git(["commit", "-q", "-m", "initial"])
+
+        let database = try Database(path: Database.transient)
+        try Migrations.migrate(database)
+        let permissionStore = PermissionStore(database: database)
+        try permissionStore.addPathGrant(PathGrant(path: root.path, mode: .readOnly, recursive: true))
+        let provider = GitToolProvider(
+            engine: PermissionEngine(store: permissionStore),
+            audit: AuditLog(fileURL: root.appendingPathComponent("git-audit.log"))
+        )
+
+        let status = try await provider.invoke(tool: "git", arguments: .object([
+            "operation": .string("status"),
+            "path": .string(root.path),
+        ]))
+        XCTAssertFalse(status.isError, status.text)
+        XCTAssertTrue(status.text.contains("##"))
+
+        let log = try await provider.invoke(tool: "git", arguments: .object([
+            "operation": .string("log"),
+            "path": .string(root.path),
+        ]))
+        XCTAssertTrue(log.text.contains("initial"))
+    }
+
     func testEditReplaceAndPatch() async throws {
         let (broker, root) = try makeBroker()
         defer { try? FileManager.default.removeItem(at: root) }

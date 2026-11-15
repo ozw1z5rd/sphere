@@ -84,12 +84,14 @@ public final class GitToolProvider: ToolProvider {
 
         let environment = ProcessRunner.sanitizedEnvironment(extra: [
             "GIT_TERMINAL_PROMPT": "0",
+            "GIT_OPTIONAL_LOCKS": "0",
             "GIT_PAGER": "cat",
             "PAGER": "cat",
         ])
+        let profile = ExecToolProvider.sandboxProfile(grantedRoot: cwd, allowWrites: false)
         let result = try ProcessRunner.run(
-            executable: gitURL,
-            arguments: gitArguments,
+            executable: URL(fileURLWithPath: "/usr/bin/sandbox-exec"),
+            arguments: ["-p", profile, "--", gitURL.path] + gitArguments,
             cwd: cwd,
             environment: environment,
             timeout: 20,
