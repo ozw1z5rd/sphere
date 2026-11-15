@@ -110,6 +110,14 @@ through Sphere.
 - You can revoke a consent from the Screen tab (trash can).
 - Captures end up in `Captures/`; delete them if they contain sensitive data.
 
+## Clipboard access
+
+`clipboard_read` and `clipboard_write` are system-wide (not path-scoped). Every
+successful or denied invocation is recorded in `clipboard_events` with the
+session, operation, detail and result; the status bar shows a per-session
+counter and the Tools tab shows the log. Use the Tools tab to disable either
+tool.
+
 ## Internet access
 
 The `web_fetch` tool is a built-in provider (`sphere.web`). The network policy

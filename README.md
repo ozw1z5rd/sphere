@@ -18,7 +18,7 @@ plug-in contract for the knowledge base.
 
 ```bash
 swift build                 # compile everything
-swift test                  # 45 tests (manifest, policy, store, tools, installer)
+swift test                  # 46 tests (manifest, policy, store, tools, installer)
 swift run Sphere            # launch the GUI app
 swift run sphere-cli help   # launch the CLI
 ```

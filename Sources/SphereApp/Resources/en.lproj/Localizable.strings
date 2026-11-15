@@ -219,3 +219,9 @@
 "All tools are enabled by default. Disable any tool you do not want the AI to use." = "All tools are enabled by default. Disable any tool you do not want the AI to use.";
 "No tools available." = "No tools available.";
 "Enable sandboxed exec in Settings → Tools to use this tool." = "Enable sandboxed exec in Settings → Tools to use this tool.";
+
+"Collapse response" = "Collapse response";
+"Expand response" = "Expand response";
+"Clipboard accesses in this session" = "Clipboard accesses in this session";
+"Clipboard activity" = "Clipboard activity";
+"No clipboard activity yet." = "No clipboard activity yet.";

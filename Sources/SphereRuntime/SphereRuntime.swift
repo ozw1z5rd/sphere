@@ -22,6 +22,7 @@ public final class SphereRuntime: @unchecked Sendable {
     public let broker: FilesystemBroker
     public let networkStore: NetworkStore
     public let networkPolicy: NetworkPolicy
+    public let clipboardStore: ClipboardStore
     public let web: WebToolProvider
     public let git: GitToolProvider
     public let system: SystemToolProvider
@@ -52,6 +53,7 @@ public final class SphereRuntime: @unchecked Sendable {
         broker = FilesystemBroker(engine: engine, audit: audit)
         networkStore = NetworkStore(database: database)
         networkPolicy = NetworkPolicy(store: networkStore)
+        clipboardStore = ClipboardStore(database: database)
         web = WebToolProvider(policy: networkPolicy, store: networkStore, audit: audit)
         git = GitToolProvider(engine: engine, audit: audit)
         system = SystemToolProvider(permissions: permissions, audit: audit)

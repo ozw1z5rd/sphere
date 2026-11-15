@@ -139,6 +139,18 @@ public enum Migrations {
         Migration(version: 5, sql: """
         ALTER TABLE messages ADD COLUMN tool_calls_json TEXT;
         """),
+        Migration(version: 6, sql: """
+        CREATE TABLE IF NOT EXISTS clipboard_events (
+            id TEXT PRIMARY KEY,
+            session_id TEXT,
+            operation TEXT NOT NULL,
+            detail TEXT,
+            allowed INTEGER NOT NULL DEFAULT 1,
+            timestamp REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_clipboard_events_time ON clipboard_events(timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_clipboard_events_session ON clipboard_events(session_id, timestamp DESC);
+        """),
     ]
 
     public static func migrate(_ database: Database) throws {

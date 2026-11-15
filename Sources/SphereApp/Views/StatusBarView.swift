@@ -16,6 +16,11 @@ struct StatusBarView: View {
                 )
             }
             StatusItem(icon: "folder", value: "\(model.accessSummary.total)", help: accessHelp)
+            StatusItem(
+                icon: "doc.on.clipboard",
+                value: "\(model.clipboardAccessCount)",
+                help: L10n.t("Clipboard accesses in this session")
+            )
             Spacer()
             if let provider = model.activeProviderLabel {
                 Text(provider)

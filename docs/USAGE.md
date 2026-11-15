@@ -97,7 +97,10 @@ provider are ignored (e.g. `top_k` on OpenAI).
   The session and its messages are removed from the database.
 - Write in the field at the bottom and press `Cmd+Invio` or the send button.
 - The response is streamed and rendered in **Markdown** (headings,
-  lists, tables, code blocks). Remote images are not loaded: the
+  lists, tables, code blocks). Deltas are coalesced (~20 UI updates/second) so
+  the interface stays responsive during generation.
+- Each AI response can be **collapsed** with the chevron in its header; a
+  one-line preview remains visible. Remote images are not loaded: the
   renderer uses only local assets, so the network ban list remains effective.
 - Messages remain stored in SQLite.
 - Tool calls are executed automatically according to the policy
@@ -123,6 +126,7 @@ At the bottom of the main window the status bar is always visible with:
 | `$` | estimated session cost, computed with the model's price list |
 | `clock` | time elapsed since the start of the session (updated every second) |
 | `folder` | number of filesystem accesses in the session (tooltip: read/write/denied) |
+| `clipboard` | number of clipboard accesses by the AI in the session |
 
 On the right, the active provider and model are shown.
 
@@ -252,6 +256,10 @@ installing or enabling a module).
 
 `exec` also requires enabling sandboxed execution in **Settings → Tools**;
 the note in its row reminds you.
+
+The right pane of the **Tools** tab shows the **Clipboard activity** log
+(`clipboard_events`): time, READ/WRITE and result for every clipboard access in
+the current session.
 
 ## 6. Screen access
 

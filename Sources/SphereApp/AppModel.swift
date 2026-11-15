@@ -21,6 +21,8 @@ public final class AppModel: ObservableObject {
     @Published public var currentSessionId: String?
     @Published public var messages: [ChatMessage] = []
     @Published public var toolCalls: [ToolCallRecord] = []
+    @Published public var clipboardEvents: [ClipboardEvent] = []
+    @Published public var clipboardAccessCount = 0
     @Published public var streamingText = ""
     @Published public var input = ""
     @Published public var attachments: [ChatAttachment] = []
@@ -99,10 +101,24 @@ public final class AppModel: ObservableObject {
         guard let runtime, let sessionId = currentSessionId else {
             messages = []
             toolCalls = []
+            clipboardEvents = []
+            clipboardAccessCount = 0
             return
         }
         messages = (try? runtime.sessions.messages(sessionId: sessionId)) ?? []
         toolCalls = (try? runtime.sessions.toolCalls(sessionId: sessionId)) ?? []
+        clipboardEvents = (try? runtime.clipboardStore.events(sessionId: sessionId)) ?? []
+        clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
+    }
+
+    public func reloadClipboardEvents() {
+        guard let runtime, let sessionId = currentSessionId else {
+            clipboardEvents = []
+            clipboardAccessCount = 0
+            return
+        }
+        clipboardEvents = (try? runtime.clipboardStore.events(sessionId: sessionId)) ?? []
+        clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
     }
 
     public func reloadToolCalls() {
@@ -127,6 +143,8 @@ public final class AppModel: ObservableObject {
             currentSessionId = session.id
             messages = []
             toolCalls = []
+            clipboardEvents = []
+            clipboardAccessCount = 0
             refreshStatus()
         } catch {
             errorMessage = error.localizedDescription
@@ -159,6 +177,8 @@ public final class AppModel: ObservableObject {
                 currentSessionId = nil
                 messages = []
                 toolCalls = []
+                clipboardEvents = []
+                clipboardAccessCount = 0
                 attachments = []
                 sessionUsage = .zero
             }
@@ -254,22 +274,41 @@ public final class AppModel: ObservableObject {
                     model: providerConfig.model,
                     options: GenerationOptions(provider: providerConfig)
                 )
+                var pendingDelta = ""
+                var lastFlush = Date.distantPast
+
                 for try await event in stream {
                     switch event {
                     case .textDelta(let delta):
-                        streamingText += delta
+                        // Coalesce SSE deltas: update the UI at most ~20x/second
+                        // instead of re-rendering Markdown for every token.
+                        pendingDelta += delta
+                        if Date().timeIntervalSince(lastFlush) >= 0.05 {
+                            streamingText += pendingDelta
+                            pendingDelta = ""
+                            lastFlush = Date()
+                        }
                     case .assistantMessage:
+                        if !pendingDelta.isEmpty {
+                            streamingText += pendingDelta
+                            pendingDelta = ""
+                        }
                         streamingText = ""
                         reloadMessages()
                     case .toolCallStarted:
                         reloadToolCalls()
-                    case .toolCallFinished:
+                    case .toolCallFinished(let record):
+                        recordClipboard(record)
                         reloadToolCalls()
                         refreshStatus()
                     case .usage(let usage):
                         sessionUsage = usage
                         refreshAccessSummary()
                     case .completed(let finalText):
+                        if !pendingDelta.isEmpty {
+                            streamingText += pendingDelta
+                            pendingDelta = ""
+                        }
                         streamingText = ""
                         reloadMessages()
                         refreshStatus()
@@ -278,10 +317,38 @@ public final class AppModel: ObservableObject {
                         }
                     }
                 }
+                if !pendingDelta.isEmpty {
+                    streamingText += pendingDelta
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    private func recordClipboard(_ record: ToolCallRecord) {
+        guard let runtime,
+              record.moduleId == "sphere.system",
+              record.toolName == "clipboard_read" || record.toolName == "clipboard_write" else {
+            return
+        }
+        let operation = record.toolName == "clipboard_read" ? "read" : "write"
+        var detail: String?
+        if operation == "write",
+           let text = JSONValue.parse(record.argumentsJSON)["text"]?.stringValue {
+            detail = "\(text.count) chars"
+        } else if let result = record.resultJSON {
+            let firstLine = result.components(separatedBy: .newlines).first ?? result
+            detail = String(firstLine.prefix(160))
+        }
+        let event = ClipboardEvent(
+            sessionId: currentSessionId,
+            operation: operation,
+            detail: detail,
+            allowed: record.status == .succeeded
+        )
+        try? runtime.clipboardStore.record(event)
+        reloadClipboardEvents()
     }
 
     public func cancel() {

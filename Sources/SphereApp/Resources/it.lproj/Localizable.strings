@@ -219,3 +219,9 @@
 "All tools are enabled by default. Disable any tool you do not want the AI to use." = "Tutti i tool sono abilitati per impostazione predefinita. Disabilita quelli che non vuoi che l'AI usi.";
 "No tools available." = "Nessun tool disponibile.";
 "Enable sandboxed exec in Settings → Tools to use this tool." = "Abilita l'esecuzione sandbox in Impostazioni → Strumenti per usare questo tool.";
+
+"Collapse response" = "Comprimi risposta";
+"Expand response" = "Espandi risposta";
+"Clipboard accesses in this session" = "Accessi alla clipboard in questa sessione";
+"Clipboard activity" = "Attività clipboard";
+"No clipboard activity yet." = "Nessuna attività clipboard.";

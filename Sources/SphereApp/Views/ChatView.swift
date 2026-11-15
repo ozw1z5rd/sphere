@@ -311,6 +311,8 @@ struct MessageRow: View {
     let message: ChatMessage
     var onSpeak: (() -> Void)? = nil
 
+    @State private var isCollapsed = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
@@ -325,17 +327,38 @@ struct MessageRow: View {
                     .buttonStyle(.borderless)
                     .help(Text("Read this message"))
                 }
+                if message.role == .assistant, !message.content.isEmpty {
+                    Spacer(minLength: 6)
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isCollapsed.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.borderless)
+                    .help(isCollapsed ? Text("Expand response") : Text("Collapse response"))
+                }
             }
             if !message.content.isEmpty {
-                content
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(background)
-                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                if isCollapsed {
+                    Text(message.content)
+                        .font(model.messageFont(for: message.role))
+                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    content
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(background)
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
+                }
             }
 
-            if !message.attachments.isEmpty {
+            if !message.attachments.isEmpty && !isCollapsed {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(message.attachments) { attachment in

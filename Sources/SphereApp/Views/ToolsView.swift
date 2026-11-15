@@ -38,34 +38,74 @@ struct ToolsView: View {
 
             Divider()
 
-            if model.tools.isEmpty {
-                VStack(spacing: 6) {
-                    Image(systemName: "wrench.and.screwdriver")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                    Text("No tools available.")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List {
-                    ForEach(groups) { group in
-                        Section {
-                            ForEach(group.tools) { tool in
-                                ToolAccessRow(tool: tool)
-                                    .environmentObject(model)
+            HSplitView {
+                Group {
+                    if model.tools.isEmpty {
+                        VStack(spacing: 6) {
+                            Image(systemName: "wrench.and.screwdriver")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                            Text("No tools available.")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        List {
+                            ForEach(groups) { group in
+                                Section {
+                                    ForEach(group.tools) { tool in
+                                        ToolAccessRow(tool: tool)
+                                            .environmentObject(model)
+                                    }
+                                } header: {
+                                    Text(displayName(for: group.module))
+                                        .font(.caption.weight(.semibold))
+                                }
                             }
-                        } header: {
-                            Text(displayName(for: group.module))
-                                .font(.caption.weight(.semibold))
                         }
                     }
                 }
+                .frame(minWidth: 420, idealWidth: 520)
+
+                clipboardPanel
+                    .frame(minWidth: 320, idealWidth: 420, maxWidth: .infinity)
             }
         }
         .onAppear {
             Task { await model.refreshTools() }
         }
+    }
+
+    private var clipboardPanel: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Label("Clipboard activity", systemImage: "doc.on.clipboard")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Text("\(model.clipboardEvents.count)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.bar)
+
+            Divider()
+
+            SystemLogView(
+                lines: model.clipboardEvents.map { event in
+                    LogLine(
+                        id: event.id,
+                        timestamp: event.timestamp,
+                        status: event.operation.uppercased(),
+                        statusColor: event.allowed ? .green : .red,
+                        message: event.detail ?? "-"
+                    )
+                },
+                emptyMessage: "No clipboard activity yet."
+            )
+        }
+        .background(.background)
     }
 
     private var enabledCount: Int {

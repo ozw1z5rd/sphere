@@ -204,3 +204,24 @@ final class ToolRouterTests: XCTestCase {
         XCTAssertEqual(after.count, 2)
     }
 }
+
+final class ClipboardStoreTests: XCTestCase {
+    func testRecordAndCountBySession() throws {
+        let database = try Database(path: Database.transient)
+        try Migrations.migrate(database)
+        let store = ClipboardStore(database: database)
+
+        try store.record(ClipboardEvent(sessionId: "a", operation: "read", detail: "5 chars"))
+        try store.record(ClipboardEvent(sessionId: "a", operation: "write", detail: "7 chars"))
+        try store.record(ClipboardEvent(sessionId: "b", operation: "read", detail: nil))
+        try store.record(ClipboardEvent(sessionId: "a", operation: "read", detail: nil, allowed: false))
+
+        XCTAssertEqual(try store.count(), 4)
+        XCTAssertEqual(try store.count(sessionId: "a"), 3)
+        XCTAssertEqual(try store.count(sessionId: "a", allowedOnly: true), 2)
+        let events = try store.events(sessionId: "a")
+        XCTAssertEqual(events.count, 3)
+        XCTAssertEqual(events.first?.operation, "read")
+        XCTAssertTrue(events.allSatisfy { $0.sessionId == "a" })
+    }
+}

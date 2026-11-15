@@ -105,7 +105,8 @@ all tools enabled by default).
 - `sphere.web`: `web_fetch` and `web_search` (DuckDuckGo HTML), behind the
   network ban list.
 - `sphere.git`: read-only status/diff/log/show/blame via `/usr/bin/git`.
-- `sphere.system`: `system_info` and clipboard read/write.
+- `sphere.system`: `system_info` and clipboard read/write (logged in
+  `clipboard_events`, with a per-session counter in the status bar).
 - `sphere.exec`: opt-in argv-only sandboxed command execution. Child processes
   run under `sandbox-exec` with network denied and writes limited to the
   granted root; see [PERMISSIONS.md](PERMISSIONS.md).
@@ -153,9 +154,10 @@ in `Database.swift` (serialized with a lock).
 | `screen_grants` | window allowlist, capture counters |
 | `network_rules` | URL/domain/IP ban, enabled, block counter |
 | `network_events` | audit of allowed/blocked internet requests |
+| `clipboard_events` | clipboard read/write accesses (session, operation, detail) |
 
 Migrations: v1 base schema, v2 session token/cost, v3 message attachments,
-v4 network rules and events, v5 message tool calls.
+v4 network rules and events, v5 message tool calls, v6 clipboard events.
 
 ## Storage
 
