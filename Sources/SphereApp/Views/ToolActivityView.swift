@@ -96,9 +96,9 @@ private struct ToolCallCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
-    private func section(_ title: String, text: String) -> some View {
+    private func section(_ title: LocalizedStringKey, text: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased())
+            Text(title).textCase(.uppercase)
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .foregroundStyle(.secondary)
             Text(text)

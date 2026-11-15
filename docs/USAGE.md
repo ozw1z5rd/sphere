@@ -27,8 +27,12 @@ modules created from the CLI are visible in the GUI and vice versa.
 ## 2. Configuring an LLM provider
 
 Open **Sphere → Settings…** (`Cmd+,`). Settings are organized into
-tabs: **Provider**, **Voce** (Voice), **Aspetto** (Appearance), **Diagnostica** (Diagnostics), **Knowledge**,
-**Storage**.
+tabs: **General**, **Provider**, **Voce** (Voice), **Aspetto** (Appearance),
+**Diagnostica** (Diagnostics), **Knowledge**, **Storage**.
+
+The **General** tab sets the interface **Language**: *System (default)*,
+*Italiano* or *English*. The change applies immediately to the whole UI (the
+menu bar follows the macOS application language).
 
 Preconfigured providers:
 

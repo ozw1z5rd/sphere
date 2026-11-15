@@ -12,7 +12,7 @@ struct AboutView: View {
                 Text("Assistente AI locale per macOS")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("Versione \(version)")
+                (Text("Version") + Text(verbatim: " \(version)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -53,7 +53,7 @@ struct AboutView: View {
         }
         .frame(width: 150, height: 150)
         .shadow(color: .black.opacity(0.18), radius: 10, y: 5)
-        .accessibilityLabel("Cervello circuitale, icona di Sphere")
+        .accessibilityLabel(Text("Circuit brain, Sphere icon"))
     }
 
     private var license: some View {
@@ -90,7 +90,7 @@ struct AboutView: View {
             .frame(width: 54, height: 54)
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            Text("© \(year) Home Computer Group")
+            Text(verbatim: "© \(year) Home Computer Group")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

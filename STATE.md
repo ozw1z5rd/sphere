@@ -18,7 +18,8 @@ of opencode locally:
 - screen access with **per-window** consent;
 - knowledge base as a plugin;
 - Internet access with a URL/domain/IP **ban list**;
-- Italian UI, Console-style macOS logs.
+- Multilingual UI (Italian + English, system default or in-app override),
+  Console-style macOS logs.
 
 ---
 
@@ -73,6 +74,8 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 - **Finder-style inline rename** (click on the session, then click on the name;
   or double click/context menu — text preselected, Enter confirms,
   Esc cancels).
+- **Multilingual UI**: Italian and English, following the system language or
+  overridden in **Settings → General → Language**.
 - Status bar: tokens, estimated cost, session time, FS access counters.
 
 **Modules**

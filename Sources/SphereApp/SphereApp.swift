@@ -9,6 +9,7 @@ struct SphereDesktopApp: App {
         WindowGroup("Sphere") {
             ContentView()
                 .environmentObject(model)
+                .environment(\.locale, model.appLocale)
         }
         .windowStyle(.titleBar)
         .commands {
@@ -27,6 +28,7 @@ struct SphereDesktopApp: App {
 
         Window("About Sphere", id: "about") {
             AboutView()
+                .environment(\.locale, model.appLocale)
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 470, height: 620)
@@ -34,6 +36,7 @@ struct SphereDesktopApp: App {
         Settings {
             SettingsView()
                 .environmentObject(model)
+                .environment(\.locale, model.appLocale)
                 .frame(width: 700, height: 560)
         }
     }

@@ -35,6 +35,11 @@ if [ -f "$ROOT/Sources/SphereApp/Resources/CompanyLogo.png" ]; then
     cp "$ROOT/Sources/SphereApp/Resources/CompanyLogo.png" "$APP/Contents/Resources/CompanyLogo.png"
 fi
 
+for lproj in "$ROOT/Sources/SphereApp/Resources"/*.lproj; do
+    [ -e "$lproj" ] || continue
+    cp -R "$lproj" "$APP/Contents/Resources/"
+done
+
 for bundle in "$BIN_DIR"/*.bundle; do
     [ -e "$bundle" ] || continue
     cp -R "$bundle" "$APP/Contents/Resources/"

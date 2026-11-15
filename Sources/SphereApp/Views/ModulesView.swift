@@ -99,7 +99,7 @@ private struct ModuleRow: View {
                 }
                 if let filesystem = module.manifest.permissions.filesystem {
                     Label(
-                        "filesystem \(filesystem.mode.rawValue) · \(filesystem.paths.count) path(s)",
+                        L10n.format("filesystem %@ · %d path(s)", filesystem.mode.rawValue, filesystem.paths.count),
                         systemImage: "folder"
                     )
                     .font(.caption)

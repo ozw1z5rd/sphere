@@ -12,7 +12,12 @@ struct NetworkView: View {
                 Label("Internet", systemImage: "globe")
                     .font(.headline)
                 Spacer()
-                Text("richieste \(model.networkSummary.total) · consentite \(model.networkSummary.allowed) · bloccate \(model.networkSummary.blocked)")
+                Text(L10n.format(
+                    "requests %d · allowed %d · blocked %d",
+                    model.networkSummary.total,
+                    model.networkSummary.allowed,
+                    model.networkSummary.blocked
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button {
@@ -26,7 +31,7 @@ struct NetworkView: View {
             Divider()
 
             HStack(spacing: 8) {
-                TextField("URL, dominio o IP/CIDR da bloccare", text: $newValue)
+                TextField("URL, domain or IP/CIDR to block", text: $newValue)
                     .textFieldStyle(.roundedBorder)
                 Picker("", selection: $newKind) {
                     ForEach(NetworkRuleKind.allCases, id: \.self) { kind in
@@ -35,7 +40,7 @@ struct NetworkView: View {
                 }
                 .labelsHidden()
                 .frame(width: 120)
-                Button("Aggiungi") {
+                Button("Add") {
                     model.addNetworkRule(value: newValue, kind: newKind)
                     newValue = ""
                 }
@@ -56,11 +61,11 @@ struct NetworkView: View {
 
             HSplitView {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("URL / dominio / IP bloccati")
+                    Text("Blocked URLs / domains / IPs")
                         .font(.headline)
                         .padding(8)
                     if model.networkRules.isEmpty {
-                        Text("Nessuna regola. Le richieste internet sono consentite.")
+                        Text("No rules. Internet requests are allowed.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,10 +81,10 @@ struct NetworkView: View {
                 .frame(minWidth: 260, idealWidth: 340, maxWidth: 460)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Richieste recenti")
+                    Text("Recent requests")
                         .font(.headline)
                         .padding(8)
-                    SystemLogView(lines: networkLines, emptyMessage: "Nessuna richiesta registrata.")
+                    SystemLogView(lines: networkLines, emptyMessage: "No requests recorded.")
                 }
                 .frame(minWidth: 480, idealWidth: 680, maxWidth: .infinity)
                 .layoutPriority(1)
@@ -131,7 +136,7 @@ private struct NetworkRuleRow: View {
                         .textSelection(.enabled)
                         .lineLimit(2)
                 }
-                Text("blocchi: \(rule.blockedCount)")
+                Text(L10n.format("blocks: %d", rule.blockedCount))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

@@ -7,12 +7,12 @@ struct StatusBarView: View {
     var body: some View {
         HStack(spacing: 18) {
             StatusItem(label: "TOK", value: tokenText, help: tokenHelp)
-            StatusItem(icon: "dollarsign.circle", value: costText, help: "Costo stimato della sessione")
+            StatusItem(icon: "dollarsign.circle", value: costText, help: L10n.t("Estimated session cost"))
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 StatusItem(
                     icon: "clock",
                     value: elapsedText(now: context.date),
-                    help: "Tempo dall'inizio della sessione"
+                    help: L10n.t("Time since the session started")
                 )
             }
             StatusItem(icon: "folder", value: "\(model.accessSummary.total)", help: accessHelp)
@@ -42,7 +42,12 @@ struct StatusBarView: View {
     }
 
     private var accessHelp: String {
-        "read \(model.accessSummary.reads) · write \(model.accessSummary.writes) · negati \(model.accessSummary.denied)"
+        L10n.format(
+            "read %d · write %d · denied %d",
+            model.accessSummary.reads,
+            model.accessSummary.writes,
+            model.accessSummary.denied
+        )
     }
 
     private func elapsedText(now: Date) -> String {

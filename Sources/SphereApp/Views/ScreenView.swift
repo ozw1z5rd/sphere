@@ -81,7 +81,7 @@ struct ScreenView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(grant.windowTitle ?? grant.appName)
                                         .lineLimit(1)
-                                    Text("\(grant.bundleId ?? "unknown") · captures: \(grant.captureCount)")
+                                    Text("\(grant.bundleId ?? L10n.t("unknown")) · \(L10n.t("captures:")) \(grant.captureCount)")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                 }

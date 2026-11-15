@@ -12,7 +12,7 @@ struct LogLine: Identifiable {
 /// Rows use a monospaced font and alternating background like the macOS log.
 struct SystemLogView: View {
     let lines: [LogLine]
-    let emptyMessage: String
+    let emptyMessage: LocalizedStringKey
 
     private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()

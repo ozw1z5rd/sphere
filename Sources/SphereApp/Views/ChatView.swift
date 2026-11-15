@@ -70,7 +70,7 @@ struct ChatView: View {
 
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    Label(model.activeProviderLabel ?? "Nessun provider", systemImage: "cpu")
+                    Label(model.activeProviderLabel ?? L10n.t("Nessun provider"), systemImage: "cpu")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -93,7 +93,7 @@ struct ChatView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                     .buttonStyle(.borderless)
-                    .help("Carica i modelli dal provider")
+                    .help(Text("Load models from the provider"))
                     if model.isLoadingModels {
                         ProgressView().controlSize(.small)
                     }
@@ -104,7 +104,7 @@ struct ChatView: View {
                         Image(systemName: "wrench.and.screwdriver")
                     }
                     .buttonStyle(.borderless)
-                    .help(showToolCalls ? "Nascondi attività tool" : "Mostra attività tool")
+                    .help(showToolCalls ? Text("Hide tool activity") : Text("Show tool activity"))
 
                     Toggle("Voce", isOn: Binding(
                         get: { model.config.speechEnabled },
@@ -112,7 +112,7 @@ struct ChatView: View {
                     ))
                     .toggleStyle(.checkbox)
                     .font(.caption)
-                    .help("Attiva o disattiva la sintesi vocale")
+                    .help(Text("Enable or disable text-to-speech"))
 
                     if model.config.speechEnabled {
                         if model.isSpeaking {
@@ -122,14 +122,14 @@ struct ChatView: View {
                                 Image(systemName: model.isSpeechPaused ? "play.circle" : "pause.circle")
                             }
                             .buttonStyle(.borderless)
-                            .help(model.isSpeechPaused ? "Riprendi lettura" : "Metti in pausa")
+                            .help(model.isSpeechPaused ? Text("Resume reading") : Text("Pause"))
                             Button {
                                 model.stopSpeaking()
                             } label: {
                                 Image(systemName: "speaker.slash")
                             }
                             .buttonStyle(.borderless)
-                            .help("Ferma la lettura")
+                            .help(Text("Stop reading"))
                         } else if let lastAssistant = model.messages.last(where: {
                             $0.role == .assistant && !$0.content.isEmpty
                         }) {
@@ -139,7 +139,7 @@ struct ChatView: View {
                                 Image(systemName: "speaker.wave.2")
                             }
                             .buttonStyle(.borderless)
-                            .help("Leggi l'ultima risposta")
+                            .help(Text("Read the last response"))
                         }
                     }
                 }
@@ -240,7 +240,7 @@ struct ChatView: View {
                         } label: {
                             Image(systemName: "paperclip")
                         }
-                        .help("Allega file")
+                        .help(Text("Attach files"))
 
                         if model.isBusy {
                             ProgressView().controlSize(.small)
@@ -323,7 +323,7 @@ struct MessageRow: View {
                         Image(systemName: "speaker.wave.2")
                     }
                     .buttonStyle(.borderless)
-                    .help("Leggi questo messaggio")
+                    .help(Text("Read this message"))
                 }
             }
             if !message.content.isEmpty {
@@ -367,7 +367,7 @@ struct MessageRow: View {
         }
     }
 
-    private var label: String {
+    private var label: LocalizedStringKey {
         switch message.role {
         case .system: return "system"
         case .user: return "you"
@@ -396,8 +396,8 @@ struct MessageRow: View {
 }
 
 struct ContentUnavailableViewCompat: View {
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 6) {

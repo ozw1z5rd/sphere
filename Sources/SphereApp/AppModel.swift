@@ -62,6 +62,7 @@ public final class AppModel: ObservableObject {
             self.config = AppConfig()
             self.startupError = error.localizedDescription
         }
+        L10n.setLanguage(config.language)
         speech.onSpeakingChanged = { [weak self] speaking, paused in
             self?.isSpeaking = speaking
             self?.isSpeechPaused = paused
@@ -112,7 +113,11 @@ public final class AppModel: ObservableObject {
     public func newSession() {
         guard let runtime else { return }
         do {
-            let session = try runtime.sessions.createSession(providerId: config.activeProviderId, model: config.activeProvider?.model)
+            let session = try runtime.sessions.createSession(
+                title: L10n.t("New session"),
+                providerId: config.activeProviderId,
+                model: config.activeProvider?.model
+            )
             sessions = try runtime.sessions.sessions()
             currentSessionId = session.id
             messages = []
@@ -179,11 +184,11 @@ public final class AppModel: ObservableObject {
             modelText += (modelText.isEmpty ? "" : "\n\n") + "Attached files:\n\(lines)"
         }
         guard let providerConfig = runtime.activeProviderConfig else {
-            errorMessage = "No LLM provider configured."
+            errorMessage = L10n.t("No LLM provider configured.")
             return
         }
         guard let provider = runtime.provider(for: providerConfig) else {
-            errorMessage = "Could not create provider '\(providerConfig.name)'."
+            errorMessage = L10n.format("Could not create provider '%@'.", providerConfig.name)
             return
         }
 
@@ -313,7 +318,7 @@ public final class AppModel: ObservableObject {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.message = "Select a .spheremodule, .sphereplug, .zip or module folder"
+        panel.message = L10n.t("Select a .spheremodule, .sphereplug, .zip or module folder")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         installModule(url: url)
     }
@@ -363,7 +368,7 @@ public final class AppModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.message = "Choose a folder to grant to Sphere"
+        panel.message = L10n.t("Choose a folder to grant to Sphere")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             let grant = PathGrant(path: PathPolicy.normalize(url.path), mode: mode, recursive: true, scope: .persistent)
@@ -410,12 +415,12 @@ public final class AppModel: ObservableObject {
     public func addNetworkRule(value rawValue: String, kind: NetworkRuleKind) {
         guard let runtime else { return }
         guard let normalized = NetworkPolicy.normalizeRuleValue(rawValue, kind: kind) else {
-            networkStatus = "Valore non valido per \(kind.label)."
+            networkStatus = L10n.format("Invalid value for %@.", kind.label)
             return
         }
         do {
             try runtime.networkStore.addRule(NetworkRule(value: normalized, kind: kind))
-            networkStatus = "Regola aggiunta: \(normalized)"
+            networkStatus = L10n.format("Rule added: %@", normalized)
             refreshNetwork()
         } catch {
             networkStatus = error.localizedDescription
@@ -426,7 +431,7 @@ public final class AppModel: ObservableObject {
         guard let runtime else { return }
         do {
             try runtime.networkStore.removeRule(id: rule.id)
-            networkStatus = "Regola rimossa: \(rule.value)"
+            networkStatus = L10n.format("Rule removed: %@", rule.value)
             refreshNetwork()
         } catch {
             networkStatus = error.localizedDescription
@@ -448,7 +453,9 @@ public final class AppModel: ObservableObject {
     public func requestScreenPermission() {
         guard let runtime else { return }
         let granted = runtime.screen.requestPermission()
-        screenStatus = granted ? "Screen Recording permission granted." : "Screen Recording permission not granted."
+        screenStatus = granted
+            ? L10n.t("Screen Recording permission granted.")
+            : L10n.t("Screen Recording permission not granted.")
     }
 
     public func refreshWindows() {
@@ -456,9 +463,9 @@ public final class AppModel: ObservableObject {
         Task { @MainActor in
             do {
                 windows = try await runtime.screen.availableWindows()
-                screenStatus = "Found \(windows.count) windows."
+                screenStatus = L10n.format("Found %d windows.", windows.count)
             } catch {
-                screenStatus = "Could not list windows: \(error.localizedDescription)"
+                screenStatus = L10n.format("Could not list windows: %@", error.localizedDescription)
             }
         }
     }
@@ -488,7 +495,7 @@ public final class AppModel: ObservableObject {
         Task { @MainActor in
             do {
                 guard try runtime.allowlist.isAllowed(window) else {
-                    screenStatus = "Window not allowed. Allow it first."
+                    screenStatus = L10n.t("Window not allowed. Allow it first.")
                     return
                 }
                 let data = try await runtime.screen.captureWindow(window)
@@ -496,9 +503,9 @@ public final class AppModel: ObservableObject {
                 try? FileManager.default.createDirectory(at: AppPaths.captures, withIntermediateDirectories: true)
                 let target = AppPaths.captures.appendingPathComponent("capture-\(window.id)-\(Int(Date().timeIntervalSince1970)).png")
                 try? data.write(to: target)
-                screenStatus = "Captured to \(target.path)"
+                screenStatus = L10n.format("Captured to %@.", target.path)
             } catch {
-                screenStatus = "Capture failed: \(error.localizedDescription)"
+                screenStatus = L10n.format("Capture failed: %@", error.localizedDescription)
             }
         }
     }
@@ -515,13 +522,13 @@ public final class AppModel: ObservableObject {
 
             let type: String
             if isDirectory {
-                type = "Folder"
+                type = L10n.t("Folder")
             } else if let contentType, let description = contentType.localizedDescription {
                 type = description
             } else if !url.pathExtension.isEmpty {
                 type = url.pathExtension.uppercased()
             } else {
-                type = "File"
+                type = L10n.t("File")
             }
 
             attachments.append(
@@ -547,7 +554,7 @@ public final class AppModel: ObservableObject {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "Seleziona file da allegare al messaggio"
+        panel.message = L10n.t("Select files to attach to the message")
         guard panel.runModal() == .OK else { return }
         addAttachments(urls: panel.urls)
     }
@@ -629,7 +636,7 @@ public final class AppModel: ObservableObject {
     }
 
     public func testVoice() {
-        speak("Ciao, questa è la voce di Sphere.")
+        speak(L10n.t("Hello, this is Sphere's voice."))
     }
 
     public func setSpeechAutoSpeak(_ value: Bool) {
@@ -680,7 +687,7 @@ public final class AppModel: ObservableObject {
     public func loadModels(for provider: ProviderConfig) {
         guard let runtime else { return }
         isLoadingModels = true
-        modelListStatus = "Caricamento modelli…"
+        modelListStatus = L10n.t("Loading models…")
         Task { @MainActor in
             defer { isLoadingModels = false }
             do {
@@ -688,12 +695,12 @@ public final class AppModel: ObservableObject {
                 guard runtime.activeProviderConfig?.id == provider.id else { return }
                 availableModels = models
                 modelListStatus = models.isEmpty
-                    ? "Nessun modello elencato dal provider."
-                    : "\(models.count) modelli disponibili."
+                    ? L10n.t("No models listed by the provider.")
+                    : L10n.format("%d models available.", models.count)
             } catch {
                 guard runtime.activeProviderConfig?.id == provider.id else { return }
                 availableModels = []
-                modelListStatus = "Impossibile caricare i modelli: \(error.localizedDescription)"
+                modelListStatus = L10n.format("Could not load models: %@", error.localizedDescription)
             }
         }
     }
@@ -730,9 +737,19 @@ public final class AppModel: ObservableObject {
         guard let runtime else { return }
         let imported = runtime.importKeysFromKeychain()
         diagnosticsStatus = imported == 0
-            ? "Nessuna chiave importata dal Keychain (item assente o accesso negato)."
-            : "Importate \(imported) chiavi dal Keychain nel file segreti."
+            ? L10n.t("No keys imported from the Keychain (item missing or access denied).")
+            : L10n.format("Imported %d keys from the Keychain into the secrets file.", imported)
         loadModelsForActive()
+    }
+
+    public var appLocale: Locale {
+        L10n.locale
+    }
+
+    public func setLanguage(_ code: String?) {
+        config.language = code
+        L10n.setLanguage(code)
+        saveConfig()
     }
 
     public func saveConfig() {

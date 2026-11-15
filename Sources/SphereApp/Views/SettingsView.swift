@@ -7,6 +7,11 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             ScrollView {
+                GeneralSection().padding(16)
+            }
+            .tabItem { Label("General", systemImage: "gearshape") }
+
+            ScrollView {
                 ProviderSection().padding(16)
             }
             .tabItem { Label("Provider", systemImage: "cpu") }
@@ -37,6 +42,33 @@ struct SettingsView: View {
             .tabItem { Label("Storage", systemImage: "externaldrive") }
         }
         .padding(.top, 8)
+    }
+}
+
+private struct GeneralSection: View {
+    @EnvironmentObject var model: AppModel
+
+    var body: some View {
+        GroupBox("Language") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Language", selection: Binding(
+                    get: { model.config.language ?? "system" },
+                    set: { model.setLanguage($0 == "system" ? nil : $0) }
+                )) {
+                    Text("System (default)").tag("system")
+                    Text("Italiano").tag("it")
+                    Text("English").tag("en")
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                Text("Interface language. Changes apply immediately.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(6)
+        }
     }
 }
 
@@ -108,13 +140,13 @@ private struct ProviderEditor: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .help("Carica i modelli disponibili dal provider")
+                .help(Text("Load available models from the provider"))
                 .disabled(model.isLoadingModels)
                 Button("Test") {
                     model.loadModels(for: provider)
                 }
                 .disabled(model.isLoadingModels)
-                .help("Verifica connessione e autenticazione con il provider")
+                .help(Text("Check the connection and authentication with the provider"))
                 if model.isLoadingModels {
                     ProgressView().controlSize(.small)
                 }
@@ -147,13 +179,13 @@ private struct ProviderEditor: View {
                     ParameterRow(label: "Frequency penalty", placeholder: "0", hint: "OpenAI", text: doubleBinding(\.frequencyPenalty))
                     ParameterRow(label: "Presence penalty", placeholder: "0", hint: "OpenAI", text: doubleBinding(\.presencePenalty))
                     ParameterRow(label: "Seed", placeholder: "42", hint: "OpenAI", text: intBinding(\.seed))
-                    ParameterRow(label: "Stop sequences", placeholder: "a, b", hint: "separate da virgola", text: stopBinding)
+                    ParameterRow(label: "Stop sequences", placeholder: "a, b", hint: L10n.t("comma-separated"), text: stopBinding)
                 }
                 .padding(.top, 6)
             }
 
             HStack {
-                SecureField("API key (stored in Keychain)", text: $model.apiKeyDraft)
+                SecureField("API key (stored in secrets.json)", text: $model.apiKeyDraft)
                     .textFieldStyle(.roundedBorder)
                 Button("Save key") {
                     model.saveAPIKey(for: provider)
@@ -182,9 +214,9 @@ private struct ProviderEditor: View {
 
     private var keyStatus: String {
         if let key = model.runtime?.apiKey(for: provider), !key.isEmpty {
-            return "API key: configured"
+            return L10n.t("API key: configured")
         }
-        return "API key: not set (not required for local Ollama/LM Studio)"
+        return L10n.t("API key: not set (not required for local Ollama/LM Studio)")
     }
 
     private func setProvider(_ mutate: (inout ProviderConfig) -> Void) {
@@ -457,7 +489,7 @@ private struct KnowledgeSection: View {
                 Text("Plugin interface defined. The current build ships an in-memory stub; a local RAG implementation arrives in Phase 2.")
                     .font(.callout)
                 if let knowledge = model.runtime?.knowledge {
-                    Text("Active provider: \(knowledge.displayName)")
+                    Text(L10n.format("Active provider: %@", knowledge.displayName))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

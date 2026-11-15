@@ -112,6 +112,8 @@ public struct AppConfig: Codable, Sendable {
     public var speechRate: Double
     public var userFontName: String?
     public var userFontSize: Double
+    /// UI language code (`en`, `it`); `nil` follows the system language.
+    public var language: String?
     public var assistantFontName: String?
     public var assistantFontSize: Double
 
@@ -128,6 +130,7 @@ public struct AppConfig: Codable, Sendable {
         speechRate: Double = 0.5,
         userFontName: String? = nil,
         userFontSize: Double = 13,
+        language: String? = nil,
         assistantFontName: String? = nil,
         assistantFontSize: Double = 13
     ) {
@@ -143,6 +146,7 @@ public struct AppConfig: Codable, Sendable {
         self.speechRate = speechRate
         self.userFontName = userFontName
         self.userFontSize = userFontSize
+        self.language = language
         self.assistantFontName = assistantFontName
         self.assistantFontSize = assistantFontSize
     }
@@ -152,6 +156,7 @@ public struct AppConfig: Codable, Sendable {
         case screenCaptureEnabled, debugHTTPLogging, speechEnabled, speechAutoSpeak
         case speechVoiceIdentifier, speechRate
         case userFontName, userFontSize, assistantFontName, assistantFontSize
+        case language
     }
 
     public init(from decoder: Decoder) throws {
@@ -169,6 +174,7 @@ public struct AppConfig: Codable, Sendable {
         self.speechRate = try container.decodeIfPresent(Double.self, forKey: .speechRate) ?? 0.5
         self.userFontName = try container.decodeIfPresent(String.self, forKey: .userFontName)
         self.userFontSize = try container.decodeIfPresent(Double.self, forKey: .userFontSize) ?? 13
+        self.language = try container.decodeIfPresent(String.self, forKey: .language)
         self.assistantFontName = try container.decodeIfPresent(String.self, forKey: .assistantFontName)
         self.assistantFontSize = try container.decodeIfPresent(Double.self, forKey: .assistantFontSize) ?? 13
     }

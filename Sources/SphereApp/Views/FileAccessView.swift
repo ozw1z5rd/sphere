@@ -93,7 +93,7 @@ private struct GrantRow: View {
                     .font(.callout)
                     .lineLimit(2)
                     .textSelection(.enabled)
-                Text("read \(grant.readCount) · write \(grant.writeCount) · \(grant.scope.rawValue)")
+                Text(L10n.format("read %d · write %d · %@", grant.readCount, grant.writeCount, L10n.t(grant.scope.rawValue)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

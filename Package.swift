@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Sphere",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v13)
     ],
