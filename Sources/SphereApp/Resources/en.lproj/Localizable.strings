@@ -212,3 +212,10 @@
 "Save allowlist" = "Save allowlist";
 "Saved" = "Saved";
 "Built-in tools" = "Built-in tools";
+
+"%d of %d tools enabled" = "%d of %d tools enabled";
+"Enable all" = "Enable all";
+"Disable all" = "Disable all";
+"All tools are enabled by default. Disable any tool you do not want the AI to use." = "All tools are enabled by default. Disable any tool you do not want the AI to use.";
+"No tools available." = "No tools available.";
+"Enable sandboxed exec in Settings → Tools to use this tool." = "Enable sandboxed exec in Settings → Tools to use this tool.";

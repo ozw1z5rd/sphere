@@ -94,7 +94,9 @@ UI/CLI
 ```
 
 Tool names: normalized `<module>_<tool>`. The catalog is aggregated by
-`ToolRouter.definitions()`.
+`ToolRouter.definitions()`; tools listed in `config.disabledTools` are filtered
+out of the catalog and refused by `invoke` (the **Tools** tab edits that list,
+all tools enabled by default).
 
 ### Built-in providers
 

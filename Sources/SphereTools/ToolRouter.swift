@@ -8,21 +8,32 @@ public actor ToolRouter {
     private let host: MCPModuleHost
     private let providers: [ToolProvider]
     private var policy: [String: String]
+    private var disabledTools: Set<String>
 
     /// Called for tools whose policy is `ask`. Return `true` to allow.
     public var approvalHandler: (@Sendable (ToolDefinition) async -> Bool)?
 
-    public init(host: MCPModuleHost, providers: [ToolProvider], policy: [String: String] = [:]) {
+    public init(
+        host: MCPModuleHost,
+        providers: [ToolProvider],
+        policy: [String: String] = [:],
+        disabledTools: [String] = []
+    ) {
         self.host = host
         self.providers = providers
         self.policy = policy
+        self.disabledTools = Set(disabledTools)
     }
 
     public func setPolicy(_ policy: [String: String]) {
         self.policy = policy
     }
 
-    public func definitions() async -> [ToolDefinition] {
+    public func setDisabledTools(_ names: [String]) {
+        disabledTools = Set(names)
+    }
+
+    public func definitions(includingDisabled: Bool = false) async -> [ToolDefinition] {
         var result = providers.flatMap { $0.definitions() }
         let catalog = await host.catalog()
         for (moduleId, tools) in catalog {
@@ -38,6 +49,9 @@ public actor ToolRouter {
                 )
             }
         }
+        if !includingDisabled {
+            result = result.filter { !disabledTools.contains($0.name) }
+        }
         return result.sorted { $0.name < $1.name }
     }
 
@@ -46,6 +60,9 @@ public actor ToolRouter {
     }
 
     public func invoke(name: String, arguments: JSONValue) async throws -> ToolOutcome {
+        guard !disabledTools.contains(name) else {
+            throw SphereError.permissionDenied("tool '\(name)' is disabled")
+        }
         let all = await definitions()
         guard let definition = all.first(where: { $0.name == name }) else {
             throw SphereError.protocolError("unknown tool '\(name)'")

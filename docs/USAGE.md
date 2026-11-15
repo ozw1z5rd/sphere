@@ -241,6 +241,18 @@ The built-in filesystem broker (`sphere.filesystem`) is the only way to have
 on its own cannot be confined per-path in a non-sandboxed app: for these modules the
 grant is declarative/audit. See [PERMISSIONS.md](PERMISSIONS.md).
 
+## Tools tab
+
+The **Tools** tab lists every tool the AI can use, grouped by module/provider.
+Every tool is **enabled by default**; use the switch to disable individual
+tools, or the **Enable all** / **Disable all** buttons. Disabled tools are
+removed from the catalog sent to the model and rejected if called anyway.
+The list refreshes automatically and with the refresh button (useful after
+installing or enabling a module).
+
+`exec` also requires enabling sandboxed execution in **Settings → Tools**;
+the note in its row reminds you.
+
 ## 6. Screen access
 
 **Screen** tab.

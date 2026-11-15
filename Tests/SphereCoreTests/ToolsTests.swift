@@ -1,6 +1,7 @@
 import XCTest
 @testable import SphereCore
 @testable import SphereTools
+@testable import SphereMCP
 
 final class ToolHelpersTests: XCTestCase {
     func testJSONPathSelector() throws {
@@ -140,5 +141,66 @@ final class ToolHelpersTests: XCTestCase {
         XCTAssertFalse(ExecToolProvider.isReadOnly(argv: ["swift", "build"]))
         XCTAssertTrue(ExecToolProvider.sandboxProfile(grantedRoot: URL(fileURLWithPath: "/tmp/x"), allowWrites: true).contains("deny network*"))
         XCTAssertFalse(ExecToolProvider.sandboxProfile(grantedRoot: URL(fileURLWithPath: "/tmp/x"), allowWrites: false).contains("subpath \"/tmp/x\""))
+    }
+}
+
+private final class StubToolProvider: ToolProvider {
+    let moduleId = "stub"
+    let providerName = "Stub"
+
+    func definitions() -> [ToolDefinition] {
+        [
+            ToolDefinition(name: "stub_one", originalName: "one", moduleId: moduleId, description: "one"),
+            ToolDefinition(name: "stub_two", originalName: "two", moduleId: moduleId, description: "two"),
+        ]
+    }
+
+    func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+        ToolOutcome(text: tool)
+    }
+}
+
+final class ToolRouterTests: XCTestCase {
+    func testDisabledToolsAreHiddenAndBlocked() async throws {
+        let router = ToolRouter(
+            host: MCPModuleHost(),
+            providers: [StubToolProvider()],
+            disabledTools: ["stub_one"]
+        )
+
+        let visible = await router.definitions()
+        XCTAssertEqual(visible.map(\.name), ["stub_two"])
+
+        let all = await router.definitions(includingDisabled: true)
+        XCTAssertEqual(all.map(\.name).sorted(), ["stub_one", "stub_two"])
+
+        do {
+            _ = try await router.invoke(name: "stub_one", arguments: .object([:]))
+            XCTFail("disabled tool should be blocked")
+        } catch {
+            // expected
+        }
+
+        let outcome = try await router.invoke(name: "stub_two", arguments: .object([:]))
+        XCTAssertEqual(outcome.text, "two")
+    }
+
+    func testAllToolsEnabledByDefault() async {
+        let router = ToolRouter(host: MCPModuleHost(), providers: [StubToolProvider()])
+        let visible = await router.definitions()
+        XCTAssertEqual(visible.count, 2)
+    }
+
+    func testEnablingDisabledToolRestoresIt() async {
+        let router = ToolRouter(
+            host: MCPModuleHost(),
+            providers: [StubToolProvider()],
+            disabledTools: ["stub_one", "stub_two"]
+        )
+        let before = await router.definitions()
+        XCTAssertTrue(before.isEmpty)
+        await router.setDisabledTools([])
+        let after = await router.definitions()
+        XCTAssertEqual(after.count, 2)
     }
 }

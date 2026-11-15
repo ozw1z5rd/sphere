@@ -62,7 +62,12 @@ public final class SphereRuntime: @unchecked Sendable {
             allowlist: config.execAllowlist.isEmpty ? ExecToolProvider.defaultAllowlist : config.execAllowlist
         )
         host = MCPModuleHost()
-        router = ToolRouter(host: host, providers: [broker, web, git, system, exec], policy: config.toolPolicy)
+        router = ToolRouter(
+            host: host,
+            providers: [broker, web, git, system, exec],
+            policy: config.toolPolicy,
+            disabledTools: config.disabledTools
+        )
 
         screen = ScreenCaptureService(audit: audit)
         allowlist = ScreenAllowlist(store: permissions)
@@ -83,6 +88,7 @@ public final class SphereRuntime: @unchecked Sendable {
 
     public func applyPolicy() async {
         await router.setPolicy(config.toolPolicy)
+        await router.setDisabledTools(config.disabledTools)
     }
 
     public var activeProviderConfig: ProviderConfig? {

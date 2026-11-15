@@ -112,7 +112,7 @@ let package = Package(
         ),
         .testTarget(
             name: "SphereCoreTests",
-            dependencies: ["SphereCore", "SphereLLM", "SphereTools"]
+            dependencies: ["SphereCore", "SphereLLM", "SphereTools", "SphereMCP"]
         ),
     ]
 )

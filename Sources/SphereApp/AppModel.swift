@@ -29,6 +29,7 @@ public final class AppModel: ObservableObject {
     @Published public var accessSummary: AccessSummary = .empty
 
     @Published public var modules: [InstalledModule] = []
+    @Published public var tools: [ToolDefinition] = []
     @Published public var grants: [PathGrant] = []
     @Published public var accessEvents: [AccessEvent] = []
 
@@ -72,6 +73,7 @@ public final class AppModel: ObservableObject {
         Task { [weak self] in
             await self?.runtime?.startEnabledModules()
             self?.refreshAll()
+            await self?.refreshTools()
             self?.loadModelsForActive()
         }
     }
@@ -88,6 +90,9 @@ public final class AppModel: ObservableObject {
         reloadMessages()
         refreshStatus()
         refreshNetwork()
+        Task { [weak self] in
+            await self?.refreshTools()
+        }
     }
 
     public func reloadMessages() {
@@ -753,6 +758,34 @@ public final class AppModel: ObservableObject {
     }
 
     // MARK: - Tools
+
+    public func refreshTools() async {
+        guard let runtime else {
+            tools = []
+            return
+        }
+        tools = await runtime.router.definitions(includingDisabled: true)
+    }
+
+    public func isToolEnabled(_ name: String) -> Bool {
+        !config.disabledTools.contains(name)
+    }
+
+    public func setToolEnabled(_ name: String, enabled: Bool) {
+        var disabled = Set(config.disabledTools)
+        if enabled {
+            disabled.remove(name)
+        } else {
+            disabled.insert(name)
+        }
+        config.disabledTools = disabled.sorted()
+        saveConfig()
+    }
+
+    public func setAllToolsEnabled(_ enabled: Bool) {
+        config.disabledTools = enabled ? [] : tools.map(\.name).sorted()
+        saveConfig()
+    }
 
     public var effectiveExecAllowlist: [String] {
         config.execAllowlist.isEmpty ? ExecToolProvider.defaultAllowlist : config.execAllowlist

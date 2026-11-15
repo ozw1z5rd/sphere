@@ -30,6 +30,8 @@ struct ContentView: View {
                             .tabItem { Label("Screen", systemImage: "rectangle.on.rectangle") }
                         NetworkView()
                             .tabItem { Label("Network", systemImage: "globe") }
+                        ToolsView()
+                            .tabItem { Label("Tools", systemImage: "wrench.and.screwdriver") }
                     }
                     .padding(.top, 4)
 
