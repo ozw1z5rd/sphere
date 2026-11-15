@@ -71,6 +71,7 @@ public final class SystemToolProvider: ToolProvider {
             "user: \(NSUserName())",
             "language: \(Locale.current.identifier)",
             "shell: \(process.environment["SHELL"] ?? "-")",
+            "process cwd: \(FileManager.default.currentDirectoryPath)",
             "",
             "granted roots:",
         ]
