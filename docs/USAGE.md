@@ -90,9 +90,6 @@ provider are ignored (e.g. `top_k` on OpenAI).
   to enable inline editing (double click and the context
   menu → *Rinomina* also work). The text is selected; `Invio` (Enter) confirms,
   `Esc` cancels.
-- **Tool activity**: the wrench button in the header opens a per-session
-  panel with the tool calls (status, arguments, result). Tool output
-  is no longer shown in the chat transcript.
 - **Elimina** (Delete): swipe left on the row (or context menu → *Elimina*).
   The session and its messages are removed from the database.
 - Write in the field at the bottom and press `Cmd+Invio` or the send button.

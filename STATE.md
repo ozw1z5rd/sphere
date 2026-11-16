@@ -69,8 +69,6 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 **Sessions**
 - Creation, selection, persistence in SQLite.
 - **Swipe-to-delete** and context menu.
-- **Tool activity panel** per session (status/arguments/result); tool output
-  does not pollute the chat transcript.
 - **Finder-style inline rename** (click on the session, then click on the name;
   or double click/context menu — text preselected, Enter confirms,
   Esc cancels).
@@ -215,7 +213,6 @@ Main UI files:
 - `Sources/SphereApp/Views/ToolsView.swift` — per-tool enable/disable + tool usage log.
 - `Sources/SphereApp/Views/ClipboardView.swift` — clipboard controls, preview and log.
 - `Sources/SphereApp/Views/LogsView.swift` — dedicated logs window.
-- `Sources/SphereApp/Views/ToolActivityView.swift` — per-session tool calls.
 - `Sources/SphereApp/Views/AboutView.swift`, `StatusBarView.swift`.
 
 ### DB schema (migrations v1–v7)

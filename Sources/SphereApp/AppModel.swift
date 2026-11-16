@@ -20,7 +20,6 @@ public final class AppModel: ObservableObject {
     @Published public var sessions: [Session] = []
     @Published public var currentSessionId: String?
     @Published public var messages: [ChatMessage] = []
-    @Published public var toolCalls: [ToolCallRecord] = []
     @Published public var clipboardEvents: [ClipboardEvent] = []
     @Published public var httpLogLines: [LogLine] = []
     @Published public var keychainLogLines: [LogLine] = []
@@ -107,14 +106,12 @@ public final class AppModel: ObservableObject {
     public func reloadMessages() {
         guard let runtime, let sessionId = currentSessionId else {
             messages = []
-            toolCalls = []
             clipboardAccessCount = 0
             clipboardReadCount = 0
             clipboardWriteCount = 0
             return
         }
         messages = (try? runtime.sessions.messages(sessionId: sessionId)) ?? []
-        toolCalls = (try? runtime.sessions.toolCalls(sessionId: sessionId)) ?? []
         clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
     }
 
@@ -189,14 +186,6 @@ public final class AppModel: ObservableObject {
         refreshActivityCounts()
     }
 
-    public func reloadToolCalls() {
-        guard let runtime, let sessionId = currentSessionId else {
-            toolCalls = []
-            return
-        }
-        toolCalls = (try? runtime.sessions.toolCalls(sessionId: sessionId)) ?? []
-    }
-
     public func refreshActivityCounts() {
         guard let runtime, let sessionId = currentSessionId else {
             clipboardAccessCount = 0
@@ -226,7 +215,6 @@ public final class AppModel: ObservableObject {
             sessions = try runtime.sessions.sessions()
             currentSessionId = session.id
             messages = []
-            toolCalls = []
             clipboardAccessCount = 0
             clipboardReadCount = 0
             clipboardWriteCount = 0
@@ -263,7 +251,6 @@ public final class AppModel: ObservableObject {
             if currentSessionId == session.id {
                 currentSessionId = nil
                 messages = []
-                toolCalls = []
                 clipboardAccessCount = 0
                 clipboardReadCount = 0
                 clipboardWriteCount = 0
@@ -373,9 +360,8 @@ public final class AppModel: ObservableObject {
                     case .assistantMessage:
                         reloadMessages()
                     case .toolCallStarted:
-                        reloadToolCalls()
+                        break
                     case .toolCallFinished:
-                        reloadToolCalls()
                         reloadLogs()
                         refreshStatus()
                     case .usage(let usage):

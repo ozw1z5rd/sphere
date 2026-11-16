@@ -34,8 +34,6 @@
 "New session" = "Nuova sessione";
 "Nessun provider" = "Nessun provider";
 "Load models from the provider" = "Carica i modelli dal provider";
-"Hide tool activity" = "Nascondi attività tool";
-"Show tool activity" = "Mostra attività tool";
 "Voce" = "Voce";
 "Enable or disable text-to-speech" = "Attiva o disattiva la sintesi vocale";
 "Resume reading" = "Riprendi lettura";
@@ -55,7 +53,6 @@
 "TIME" = "ORA";
 "STATUS" = "STATO";
 "DETAILS" = "DETTAGLI";
-"No tool activity in this session" = "Nessuna attività tool in questa sessione";
 "Tool activity" = "Attività tool";
 "Arguments" = "Argomenti";
 "Result" = "Risultato";
@@ -166,7 +163,6 @@
 "Could not load models: %@" = "Impossibile caricare i modelli: %@";
 "No keys imported from the Keychain (item missing or access denied)." = "Nessuna chiave importata dal Keychain (item assente o accesso negato).";
 "Imported %d keys from the Keychain into the secrets file." = "Importate %d chiavi dal Keychain nel file segreti.";
-"Nessuna attività tool in questa sessione" = "Nessuna attività tool in questa sessione";
 "Attività tool" = "Attività tool";
 "Argomenti" = "Argomenti";
 "Errore" = "Errore";

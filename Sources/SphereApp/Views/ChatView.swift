@@ -9,7 +9,6 @@ struct ChatView: View {
     @State private var isDropTargeted = false
     @State private var editingSessionId: String?
     @State private var isAtBottom = true
-    @State private var showToolCalls = false
 
     var body: some View {
         HSplitView {
@@ -97,14 +96,6 @@ struct ChatView: View {
                     if model.isLoadingModels {
                         ProgressView().controlSize(.small)
                     }
-
-                    Button {
-                        showToolCalls.toggle()
-                    } label: {
-                        Image(systemName: "wrench.and.screwdriver")
-                    }
-                    .buttonStyle(.borderless)
-                    .help(showToolCalls ? Text("Hide tool activity") : Text("Show tool activity"))
 
                     Toggle("Voce", isOn: Binding(
                         get: { model.config.speechEnabled },
@@ -259,11 +250,6 @@ struct ChatView: View {
                         .padding(6)
                         .allowsHitTesting(false)
                 }
-            }
-
-            if showToolCalls {
-                ToolActivityView(calls: model.toolCalls)
-                    .frame(minWidth: 240, idealWidth: 320, maxWidth: 520)
             }
         }
     }
