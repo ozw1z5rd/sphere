@@ -68,7 +68,8 @@ public final class SphereRuntime: @unchecked Sendable {
             host: host,
             providers: [broker, web, git, system, exec],
             policy: config.toolPolicy,
-            disabledTools: config.disabledTools
+            disabledTools: config.disabledTools,
+            audit: audit
         )
 
         screen = ScreenCaptureService(audit: audit)

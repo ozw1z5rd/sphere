@@ -42,7 +42,7 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 ## 3. Current status
 
 - `swift build` → **OK**
-- `swift test` → **46 tests, 0 failures**
+- `swift test` → **49 tests, 0 failures**
 - App bundle: `dist/Sphere.app` (valid ad-hoc signature)
 - Launch: `./scripts/build-app.sh release --open`
 - At the time of the last update the app is running.
@@ -187,7 +187,7 @@ Sources/
   SphereRuntime/    SphereRuntime (wiring), AgentRunner
   SphereApp/        SwiftUI GUI
   SphereCLI/        CLI
-Tests/SphereCoreTests/SphereCoreTests.swift   (46 tests)
+Tests/SphereCoreTests/SphereCoreTests.swift   (49 tests)
 examples/hello-module/                        example MCP module
 scripts/                                      build-app, package-module, icon
 Support/Info.plist, Support/Sphere.icns
@@ -296,7 +296,7 @@ Keychain service: com.sphere.app (one-time import only)
 ## 9. How to resume
 
 1. `cd sphere`
-2. `swift test` to confirm 46/46.
+2. `swift test` to confirm 49/49.
 3. `./scripts/build-app.sh release --open` to launch the app.
 4. Read `docs/USAGE.md` for usage, `docs/ARCHITECTURE.md` for the design.
 5. Pick an item from section 8 and proceed.

@@ -160,6 +160,28 @@ private final class StubToolProvider: ToolProvider {
     }
 }
 
+private final class CustomToolProvider: ToolProvider {
+    let moduleId: String
+    let providerName: String
+    let toolName: String
+    let result: String
+
+    init(moduleId: String, toolName: String, result: String) {
+        self.moduleId = moduleId
+        self.providerName = moduleId
+        self.toolName = toolName
+        self.result = result
+    }
+
+    func definitions() -> [ToolDefinition] {
+        [ToolDefinition(name: toolName, originalName: toolName, moduleId: moduleId, description: toolName)]
+    }
+
+    func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+        ToolOutcome(text: result)
+    }
+}
+
 final class ToolRouterTests: XCTestCase {
     func testDisabledToolsAreHiddenAndBlocked() async throws {
         let router = ToolRouter(
@@ -189,6 +211,48 @@ final class ToolRouterTests: XCTestCase {
         let router = ToolRouter(host: MCPModuleHost(), providers: [StubToolProvider()])
         let visible = await router.definitions()
         XCTAssertEqual(visible.count, 2)
+    }
+
+    func testDenyPolicyHidesToolFromCatalog() async {
+        let router = ToolRouter(
+            host: MCPModuleHost(),
+            providers: [StubToolProvider()],
+            policy: ["stub_one": "deny"]
+        )
+        let visible = await router.definitions()
+        XCTAssertEqual(visible.map(\.name), ["stub_two"])
+        let all = await router.definitions(includingDisabled: true)
+        XCTAssertEqual(all.map(\.name), ["stub_two"])
+
+        do {
+            _ = try await router.invoke(name: "stub_one", arguments: .object([:]))
+            XCTFail("denied tool should be blocked")
+        } catch {
+            // expected
+        }
+    }
+
+    func testAskPolicyHidesToolWithoutApprovalHandler() async {
+        let router = ToolRouter(
+            host: MCPModuleHost(),
+            providers: [StubToolProvider()],
+            policy: ["stub_one": "ask"]
+        )
+        let visible = await router.definitions()
+        XCTAssertEqual(visible.map(\.name), ["stub_two"])
+    }
+
+    func testCollisionKeepsFirstProviderAndInvokeUsesIt() async throws {
+        let first = CustomToolProvider(moduleId: "first", toolName: "dup", result: "first")
+        let second = CustomToolProvider(moduleId: "second", toolName: "dup", result: "second")
+        let router = ToolRouter(host: MCPModuleHost(), providers: [first, second])
+
+        let definitions = await router.definitions(includingDisabled: true)
+        XCTAssertEqual(definitions.count, 1)
+        XCTAssertEqual(definitions.first?.moduleId, "first")
+
+        let outcome = try await router.invoke(name: "dup", arguments: .object([:]))
+        XCTAssertEqual(outcome.text, "first")
     }
 
     func testEnablingDisabledToolRestoresIt() async {

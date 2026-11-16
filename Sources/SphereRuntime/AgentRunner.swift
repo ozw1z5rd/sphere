@@ -89,9 +89,10 @@ public final class AgentRunner: @unchecked Sendable {
         conversation.append(contentsOf: LLMHistory.sanitized(history))
         conversation.append(LLMMessage(role: .user, content: userText))
 
-        let tools = await router.definitions()
-
         for _ in 0..<maxSteps {
+            // Refresh per step so tools disabled/denied mid-run disappear from
+            // the catalog instead of being advertised and then rejected.
+            let tools = await router.definitions()
             let request = LLMRequest(
                 model: model,
                 messages: conversation,

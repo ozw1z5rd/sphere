@@ -94,9 +94,14 @@ UI/CLI
 ```
 
 Tool names: normalized `<module>_<tool>`. The catalog is aggregated by
-`ToolRouter.definitions()`; tools listed in `config.disabledTools` are filtered
-out of the catalog and refused by `invoke` (the **Tools** tab edits that list,
-all tools enabled by default).
+`ToolRouter.definitions()`, which filters tools that are disabled
+(`config.disabledTools`) **and** tools whose policy is `deny` (or `ask` without
+an approval handler), so the model is never advertised a tool that `invoke`
+would reject. `AgentRunner` refreshes the catalog at every step, so mid-run
+changes take effect on the next model call; `invoke` re-checks before executing.
+Duplicate namespaced names are detected: the first provider wins, the collision
+is written to the audit log, and dispatch uses the winning tool's provider
+(ownership by tool name, not only by module id).
 
 ### Built-in providers
 
