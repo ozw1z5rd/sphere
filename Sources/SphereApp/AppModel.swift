@@ -435,10 +435,17 @@ public final class AppModel: ObservableObject {
             case .failed: status = "FAIL"; color = .red
             case .denied: status = "DENY"; color = .orange
             }
-            let args = record.argumentsJSON
-                .replacingOccurrences(of: "\n", with: " ")
-                .prefix(160)
-            let detail = "\(record.toolName) · \(record.moduleId) · \(args)"
+            let argumentsPreview: String
+            if record.moduleId == "sphere.system", record.toolName == "clipboard_write" {
+                argumentsPreview = "<text redacted>"
+            } else {
+                argumentsPreview = String(
+                    record.argumentsJSON
+                        .replacingOccurrences(of: "\n", with: " ")
+                        .prefix(160)
+                )
+            }
+            let detail = "\(record.toolName) · \(record.moduleId) · \(argumentsPreview)"
             return LogLine(
                 id: record.id,
                 timestamp: record.startedAt,
