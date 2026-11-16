@@ -82,7 +82,7 @@ public struct ProviderConfig: Codable, Sendable, Identifiable {
             name: "DeepSeek",
             kind: .openAICompatible,
             baseURL: "https://api.deepseek.com/v1",
-            model: "deepseek-chat"
+            model: "deepseek-flash"
         )
     }
 

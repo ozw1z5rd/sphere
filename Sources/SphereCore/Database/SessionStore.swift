@@ -109,6 +109,40 @@ public final class SessionStore {
         return try usage(sessionId: sessionId)
     }
 
+    /// One-time repair for sessions recorded before a model had a price
+    /// entry: estimate the historical cost from the stored token totals.
+    /// Cache hit/miss data is not available for old turns, so the cache-miss
+    /// rate is used and the session creation time selects the peak rate.
+    public func backfillMissingCosts() throws {
+        let rows = try database.query(
+            """
+            SELECT id, model, prompt_tokens, completion_tokens, created_at
+            FROM sessions
+            WHERE cost_usd = 0 AND (prompt_tokens > 0 OR completion_tokens > 0)
+            """
+        )
+        for row in rows {
+            guard
+                let id = row.string("id"),
+                let model = row.string("model"),
+                !model.isEmpty,
+                let createdAt = DateCoding.date(row["created_at"])
+            else { continue }
+            let prompt = Int(row.int("prompt_tokens") ?? 0)
+            let completion = Int(row.int("completion_tokens") ?? 0)
+            guard let cost = Pricing.cost(
+                model: model,
+                promptTokens: prompt,
+                completionTokens: completion,
+                at: createdAt
+            ), cost > 0 else { continue }
+            try database.run(
+                "UPDATE sessions SET cost_usd = ? WHERE id = ?",
+                [.real(cost), .text(id)]
+            )
+        }
+    }
+
     public func usage(sessionId: String) throws -> SessionUsage {
         let rows = try database.query(
             "SELECT prompt_tokens, completion_tokens, cost_usd FROM sessions WHERE id = ?",

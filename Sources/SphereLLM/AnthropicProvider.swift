@@ -245,7 +245,10 @@ public final class AnthropicProvider: LLMProvider, @unchecked Sendable {
             }
         }
 
-        continuation.yield(.completed(promptTokens: promptTokens, completionTokens: completionTokens))
+        continuation.yield(.completed(LLMUsage(
+            promptTokens: promptTokens,
+            completionTokens: completionTokens
+        )))
     }
 
     private func logMissingKey() {

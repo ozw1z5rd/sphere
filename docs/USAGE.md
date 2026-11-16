@@ -124,7 +124,7 @@ At the bottom of the main window the status bar is always visible with:
 | Indicator | Meaning |
 |---|---|
 | `tok` | tokens consumed in the current session (prompt + completion; tooltip for details) |
-| `$` | estimated session cost, computed with the model's price list |
+| `$` | session cost, accumulated from prompt/completion tokens; DeepSeek uses cache-hit/cache-miss input rates and peak windows. Shows `—` for models without a price entry. |
 | `clock` | time elapsed since the start of the session (updated every second) |
 | `folder` | number of filesystem accesses in the session (tooltip: read/write/denied) |
 | `clipboard` | clipboard accesses by the AI in the session (click: clipboard log) |

@@ -144,7 +144,7 @@ final class ConfigTests: XCTestCase {
 
         let deepSeek = config.providers.first { $0.name == "DeepSeek" }
         XCTAssertEqual(deepSeek?.baseURL, "https://api.deepseek.com/v1")
-        XCTAssertEqual(deepSeek?.model, "deepseek-chat")
+        XCTAssertEqual(deepSeek?.model, "deepseek-flash")
         XCTAssertEqual(deepSeek?.kind, .openAICompatible)
 
         XCTAssertFalse(config.mergeBuiltInProviders(), "second merge must be a no-op")
@@ -399,6 +399,56 @@ final class PricingTests: XCTestCase {
 
     func testUnknownModelHasNoCost() {
         XCTAssertNil(Pricing.cost(model: "some-local-model", promptTokens: 10, completionTokens: 10))
+    }
+
+    func testDeepSeekCacheMissAndOutputCost() {
+        let offPeak = ISO8601DateFormatter().date(from: "2026-11-16T12:00:00Z")!
+        let cost = Pricing.cost(
+            model: "deepseek-flash",
+            promptTokens: 1_000_000,
+            completionTokens: 1_000_000,
+            cacheHitTokens: 0,
+            cacheMissTokens: 1_000_000,
+            at: offPeak
+        )
+        XCTAssertEqual(cost ?? -1, 0.75, accuracy: 0.000_001)
+    }
+
+    func testDeepSeekCachedInputIsCheaper() {
+        let offPeak = ISO8601DateFormatter().date(from: "2026-11-16T12:00:00Z")!
+        let cost = Pricing.cost(
+            model: "deepseek-flash",
+            promptTokens: 1_000_000,
+            completionTokens: 1_000_000,
+            cacheHitTokens: 1_000_000,
+            cacheMissTokens: 0,
+            at: offPeak
+        )
+        XCTAssertEqual(cost ?? -1, 0.603, accuracy: 0.000_001)
+    }
+
+    func testDeepSeekPeakMultiplier() {
+        let offPeak = ISO8601DateFormatter().date(from: "2026-11-16T12:00:00Z")!
+        let peak = ISO8601DateFormatter().date(from: "2026-11-16T02:00:00Z")!
+        let off = Pricing.cost(model: "deepseek-flash", promptTokens: 1_000_000, completionTokens: 1_000_000, at: offPeak)
+        let on = Pricing.cost(model: "deepseek-flash", promptTokens: 1_000_000, completionTokens: 1_000_000, at: peak)
+        XCTAssertEqual((on ?? 0), (off ?? 0) * 2, accuracy: 0.000_001)
+    }
+
+    func testBackfillMissingCosts() throws {
+        let database = try Database(path: Database.transient)
+        try Migrations.migrate(database)
+        let sessions = SessionStore(database: database)
+        let session = try sessions.createSession(model: "gpt-4o-mini")
+        _ = try sessions.recordUsage(
+            sessionId: session.id,
+            promptTokens: 1_000_000,
+            completionTokens: 1_000_000,
+            costUSD: 0
+        )
+        XCTAssertEqual(try sessions.usage(sessionId: session.id).costUSD, 0, accuracy: 0.000_001)
+        try sessions.backfillMissingCosts()
+        XCTAssertEqual(try sessions.usage(sessionId: session.id).costUSD, 0.75, accuracy: 0.000_001)
     }
 }
 

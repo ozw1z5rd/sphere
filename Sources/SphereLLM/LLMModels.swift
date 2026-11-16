@@ -110,16 +110,27 @@ public struct LLMRequest: Sendable {
 public enum LLMEvent: Sendable {
     case textDelta(String)
     case toolCall(LLMToolCall)
-    case completed(promptTokens: Int?, completionTokens: Int?)
+    case completed(LLMUsage)
 }
 
 public struct LLMUsage: Sendable {
     public var promptTokens: Int?
     public var completionTokens: Int?
+    /// DeepSeek: prompt tokens served from cache.
+    public var cacheHitTokens: Int?
+    /// DeepSeek: prompt tokens billed at the cache-miss rate.
+    public var cacheMissTokens: Int?
 
-    public init(promptTokens: Int? = nil, completionTokens: Int? = nil) {
+    public init(
+        promptTokens: Int? = nil,
+        completionTokens: Int? = nil,
+        cacheHitTokens: Int? = nil,
+        cacheMissTokens: Int? = nil
+    ) {
         self.promptTokens = promptTokens
         self.completionTokens = completionTokens
+        self.cacheHitTokens = cacheHitTokens
+        self.cacheMissTokens = cacheMissTokens
     }
 }
 

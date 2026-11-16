@@ -19,6 +19,8 @@ public final class AgentRunner: @unchecked Sendable {
     private let router: ToolRouter
     private let sessions: SessionStore
     private let maxSteps: Int
+    /// Set once per run so a missing price entry is logged a single time.
+    private var warnedUnknownPricing = false
 
     public init(provider: LLMProvider, router: ToolRouter, sessions: SessionStore, maxSteps: Int = 12) {
         self.provider = provider
@@ -110,20 +112,32 @@ public final class AgentRunner: @unchecked Sendable {
                     continuation.yield(.textDelta(delta))
                 case .toolCall(let call):
                     toolCalls.append(call)
-                case .completed(let promptTokens, let completionTokens):
-                    if promptTokens != nil || completionTokens != nil {
-                        let prompt = promptTokens ?? 0
-                        let completion = completionTokens ?? 0
+                case .completed(let usage):
+                    if usage.promptTokens != nil || usage.completionTokens != nil {
+                        let prompt = usage.promptTokens ?? 0
+                        let completion = usage.completionTokens ?? 0
                         let cost = Pricing.cost(
                             model: model,
                             promptTokens: prompt,
-                            completionTokens: completion
-                        ) ?? 0
+                            completionTokens: completion,
+                            cacheHitTokens: usage.cacheHitTokens,
+                            cacheMissTokens: usage.cacheMissTokens
+                        )
+                        if cost == nil, !warnedUnknownPricing {
+                            // Unknown model: the tokens are still counted, but
+                            // the cost stays at zero. Make it visible in the
+                            // HTTP log instead of silently reporting $0.
+                            warnedUnknownPricing = true
+                            SphereLog.http.write(
+                                "pricing",
+                                "no price entry for model '\(model)' — session cost will stay at 0"
+                            )
+                        }
                         if let usage = try? sessions.recordUsage(
                             sessionId: sessionId,
                             promptTokens: prompt,
                             completionTokens: completion,
-                            costUSD: cost
+                            costUSD: cost ?? 0
                         ) {
                             continuation.yield(.usage(usage))
                         }

@@ -73,7 +73,13 @@ struct StatusBarView: View {
     }
 
     private var costText: String {
-        String(format: "$%.4f", model.sessionUsage.costUSD)
+        // No catalog entry (local model or a model we do not know): show a dash
+        // instead of "$0.0000", which would read as "free".
+        guard let modelName = model.activeProviderConfig?.model,
+              Pricing.pricing(for: modelName) != nil else {
+            return "—"
+        }
+        return String(format: "$%.4f", model.sessionUsage.costUSD)
     }
 
     private var accessHelp: String {

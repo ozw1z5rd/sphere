@@ -141,6 +141,11 @@ Xcode 15.2, so the client is implemented in-house and isolated behind
 ## LLM
 
 `LLMProvider` protocol with `AsyncThrowingStream<LLMEvent, Error>` streaming.
+The completion event carries prompt/completion usage plus DeepSeek cache-hit and
+cache-miss token counts. `Pricing` converts those to a per-request cost (base
+rate × peak multiplier); `SessionStore.recordUsage` accumulates the session
+total, and old sessions with tokens but no cost are backfilled at the
+cache-miss rate.
 
 - **OpenAI-compatible**: `/chat/completions`, SSE, accumulation of fragmented
   `tool_calls`, mapping `assistant.tool_calls` → tool call.

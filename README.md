@@ -18,7 +18,7 @@ plug-in contract for the knowledge base.
 
 ```bash
 swift build                 # compile everything
-swift test                  # 55 tests (manifest, policy, store, tools, installer)
+swift test                  # 59 tests (manifest, policy, store, tools, installer)
 swift run Sphere            # launch the GUI app
 swift run sphere-cli help   # launch the CLI
 ```
@@ -125,6 +125,10 @@ Besides MCP modules, Sphere ships in-process tools:
 - **Exec (opt-in)**: `exec` runs an allowlisted argv (no shell) inside a
   granted directory, with a timeout, no network and writes limited to the
   granted root via `sandbox-exec`. Enable it in **Settings → Tools**.
+
+The session cost uses the provider price table (DeepSeek: cache-hit/cache-miss
+input, output and peak windows) and grows with the tokens recorded for each
+request.
 
 The **Tools** tab lists every tool exposed to the model and lets you enable or
 disable each one (all enabled by default; disabled tools are hidden from the

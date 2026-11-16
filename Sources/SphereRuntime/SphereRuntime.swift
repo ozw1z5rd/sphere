@@ -44,6 +44,7 @@ public final class SphereRuntime: @unchecked Sendable {
         config = try configStore.load()
 
         sessions = SessionStore(database: database)
+        try? sessions.backfillMissingCosts()
         modules = ModuleRegistry(database: database)
         permissions = PermissionStore(database: database)
         settings = SettingsStore(database: database)

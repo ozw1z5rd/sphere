@@ -165,6 +165,8 @@ public final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
         var accumulators: [Int: ToolAccumulator] = [:]
         var promptTokens: Int?
         var completionTokens: Int?
+        var cacheHitTokens: Int?
+        var cacheMissTokens: Int?
 
         for try await line in bytes.lines {
             guard line.hasPrefix("data:") else { continue }
@@ -180,6 +182,8 @@ public final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
             if let usage = json["usage"] as? [String: Any] {
                 if let value = usage["prompt_tokens"] as? Int { promptTokens = value }
                 if let value = usage["completion_tokens"] as? Int { completionTokens = value }
+                if let value = usage["prompt_cache_hit_tokens"] as? Int { cacheHitTokens = value }
+                if let value = usage["prompt_cache_miss_tokens"] as? Int { cacheMissTokens = value }
             }
 
             guard
@@ -220,7 +224,12 @@ public final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
                 )
             )
         }
-        continuation.yield(.completed(promptTokens: promptTokens, completionTokens: completionTokens))
+        continuation.yield(.completed(LLMUsage(
+            promptTokens: promptTokens,
+            completionTokens: completionTokens,
+            cacheHitTokens: cacheHitTokens,
+            cacheMissTokens: cacheMissTokens
+        )))
     }
 
     private func logMissingKey() {
