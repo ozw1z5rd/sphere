@@ -253,3 +253,5 @@
 "Keychain" = "Keychain";
 "No HTTP log yet." = "No HTTP log yet.";
 "No keychain log yet." = "No keychain log yet.";
+
+"Generating…" = "Generating…";

@@ -152,7 +152,7 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 10) {
-                            if visibleMessages.isEmpty && model.streamingText.isEmpty {
+                            if visibleMessages.isEmpty && !model.isBusy {
                                 ContentUnavailableViewCompat(
                                     title: "Start a conversation",
                                     message: "Configure a provider in Settings, then ask Sphere anything."
@@ -167,15 +167,15 @@ struct ChatView: View {
                                 )
                                 .id(message.id)
                             }
-                            if !model.streamingText.isEmpty {
-                                MessageRow(
-                                    message: ChatMessage(
-                                        sessionId: model.currentSessionId ?? "",
-                                        role: .assistant,
-                                        content: model.streamingText
-                                    )
-                                )
-                                .id("streaming")
+                            if model.isBusy {
+                                HStack(spacing: 8) {
+                                    ProgressView().controlSize(.small)
+                                    Text("Generating…")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .id("generating")
+                                .padding(.vertical, 4)
                             }
                         }
                         .padding()
@@ -185,7 +185,7 @@ struct ChatView: View {
                     .onChange(of: model.messages.count) { _ in
                         scrollToBottom(proxy)
                     }
-                    .onChange(of: model.streamingText) { _ in
+                    .onChange(of: model.isBusy) { _ in
                         scrollToBottom(proxy)
                     }
                     .onChange(of: model.currentSessionId) { _ in
@@ -298,7 +298,9 @@ struct ChatView: View {
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         guard isAtBottom else { return }
         withAnimation(.easeOut(duration: 0.15)) {
-            proxy.scrollTo("streaming", anchor: .bottom)
+            if model.isBusy {
+                proxy.scrollTo("generating", anchor: .bottom)
+            }
             if let last = visibleMessages.last {
                 proxy.scrollTo(last.id, anchor: .bottom)
             }

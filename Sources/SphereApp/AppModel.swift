@@ -27,7 +27,6 @@ public final class AppModel: ObservableObject {
     @Published public var clipboardAccessCount = 0
     @Published public var clipboardReadCount = 0
     @Published public var clipboardWriteCount = 0
-    @Published public var streamingText = ""
     @Published public var input = ""
     @Published public var attachments: [ChatAttachment] = []
     @Published public var isBusy = false
@@ -317,7 +316,6 @@ public final class AppModel: ObservableObject {
         input = ""
         attachments = []
         isBusy = true
-        streamingText = ""
         errorMessage = nil
         if isSpeaking {
             speech.stop()
@@ -350,7 +348,6 @@ public final class AppModel: ObservableObject {
         Task { @MainActor in
             defer {
                 isBusy = false
-                streamingText = ""
                 reloadMessages()
                 refreshStatus()
             }
@@ -366,26 +363,14 @@ public final class AppModel: ObservableObject {
                     model: providerConfig.model,
                     options: GenerationOptions(provider: providerConfig)
                 )
-                var pendingDelta = ""
-                var lastFlush = Date.distantPast
-
                 for try await event in stream {
                     switch event {
-                    case .textDelta(let delta):
-                        // Coalesce SSE deltas: update the UI at most ~20x/second
-                        // instead of re-rendering Markdown for every token.
-                        pendingDelta += delta
-                        if Date().timeIntervalSince(lastFlush) >= 0.05 {
-                            streamingText += pendingDelta
-                            pendingDelta = ""
-                            lastFlush = Date()
-                        }
+                    case .textDelta:
+                        // Intentionally ignored: Markdown is rendered only after
+                        // the assistant message is persisted. This avoids a full
+                        // Markdown re-layout on every SSE token.
+                        break
                     case .assistantMessage:
-                        if !pendingDelta.isEmpty {
-                            streamingText += pendingDelta
-                            pendingDelta = ""
-                        }
-                        streamingText = ""
                         reloadMessages()
                     case .toolCallStarted:
                         reloadToolCalls()
@@ -397,20 +382,12 @@ public final class AppModel: ObservableObject {
                         sessionUsage = usage
                         refreshAccessSummary()
                     case .completed(let finalText):
-                        if !pendingDelta.isEmpty {
-                            streamingText += pendingDelta
-                            pendingDelta = ""
-                        }
-                        streamingText = ""
                         reloadMessages()
                         refreshStatus()
                         if config.speechEnabled && config.speechAutoSpeak && !finalText.isEmpty {
                             speak(finalText)
                         }
                     }
-                }
-                if !pendingDelta.isEmpty {
-                    streamingText += pendingDelta
                 }
             } catch {
                 errorMessage = error.localizedDescription
