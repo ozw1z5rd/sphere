@@ -31,7 +31,7 @@ struct SphereDesktopApp: App {
                 .environment(\.locale, model.appLocale)
         }
         .windowResizability(.contentSize)
-        .defaultSize(width: 470, height: 620)
+        .defaultSize(width: 470, height: 640)
 
         Window("Logs", id: "logs") {
             LogsView()

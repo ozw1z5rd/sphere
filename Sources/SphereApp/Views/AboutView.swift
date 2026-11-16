@@ -27,12 +27,21 @@ struct AboutView: View {
 
             license
 
+            HStack(spacing: 6) {
+                Image(systemName: "link")
+                Link(destination: URL(string: "https://github.com/ozw1z5rd/sphere")!) {
+                    Text(verbatim: "github.com/ozw1z5rd/sphere")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
             Spacer(minLength: 4)
 
             companyLogo
         }
         .padding(28)
-        .frame(width: 470, height: 620)
+        .frame(width: 470, height: 640)
     }
 
     /// The app icon (circuit brain), shown large as the About hero image.
