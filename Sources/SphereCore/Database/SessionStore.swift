@@ -10,9 +10,12 @@ public final class SessionStore {
     }
 
     public func createSession(title: String = "New session", providerId: String? = nil, model: String? = nil) throws -> Session {
-        let session = Session(title: title, providerId: providerId, model: model)
+        var session = Session(title: title, providerId: providerId, model: model)
         try database.run(
-            "INSERT INTO sessions(id, title, provider_id, model, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            """
+            INSERT INTO sessions(id, title, provider_id, model, created_at, updated_at, number)
+            VALUES (?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM sessions))
+            """,
             [
                 .text(session.id),
                 .text(session.title),
@@ -22,6 +25,10 @@ public final class SessionStore {
                 DateCoding.value(session.updatedAt),
             ]
         )
+        session.number = try database.query(
+            "SELECT number FROM sessions WHERE id = ?",
+            [.text(session.id)]
+        ).first?.int("number").map(Int.init) ?? 0
         return session
     }
 
@@ -118,15 +125,17 @@ public final class SessionStore {
     public func recordToolCall(_ call: ToolCallRecord) throws {
         try database.run(
             """
-            INSERT INTO tool_calls(id, session_id, module_id, tool_name, arguments_json, result_json, status, started_at, finished_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tool_calls(id, session_id, session_number, module_id, tool_name, arguments_json, result_json, status, started_at, finished_at)
+            VALUES (?, ?, (SELECT number FROM sessions WHERE id = ?), ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 result_json = excluded.result_json,
                 status = excluded.status,
-                finished_at = excluded.finished_at
+                finished_at = excluded.finished_at,
+                session_number = excluded.session_number
             """,
             [
                 .text(call.id),
+                .text(call.sessionId),
                 .text(call.sessionId),
                 .text(call.moduleId),
                 .text(call.toolName),
@@ -139,11 +148,29 @@ public final class SessionStore {
         )
     }
 
-    public func toolCalls(sessionId: String) throws -> [ToolCallRecord] {
+    public func toolCalls(sessionId: String, limit: Int = 200) throws -> [ToolCallRecord] {
         try database.query(
-            "SELECT * FROM tool_calls WHERE session_id = ? ORDER BY started_at ASC",
-            [.text(sessionId)]
+            """
+            SELECT * FROM (
+                SELECT * FROM tool_calls WHERE session_id = ? ORDER BY started_at DESC LIMIT ?
+            ) ORDER BY started_at ASC
+            """,
+            [.text(sessionId), .integer(Int64(limit))]
         ).compactMap(decodeToolCall)
+    }
+
+    public func toolCalls(limit: Int = 200) throws -> [ToolCallRecord] {
+        try database.query(
+            "SELECT * FROM tool_calls ORDER BY started_at DESC LIMIT ?",
+            [.integer(Int64(limit))]
+        ).compactMap(decodeToolCall)
+    }
+
+    public func toolCallCount(sessionId: String) throws -> Int {
+        try database.query(
+            "SELECT COUNT(*) AS total FROM tool_calls WHERE session_id = ?",
+            [.text(sessionId)]
+        ).first?.int("total").map(Int.init) ?? 0
     }
 
     private func decodeSession(_ row: Row) -> Session? {
@@ -155,6 +182,7 @@ public final class SessionStore {
         else { return nil }
         return Session(
             id: id,
+            number: Int(row.int("number") ?? 0),
             title: title,
             providerId: row.string("provider_id"),
             model: row.string("model"),
@@ -234,6 +262,7 @@ public final class SessionStore {
         return ToolCallRecord(
             id: id,
             sessionId: sessionId,
+            sessionNumber: row.int("session_number").map(Int.init),
             moduleId: moduleId,
             toolName: toolName,
             argumentsJSON: argumentsJSON,

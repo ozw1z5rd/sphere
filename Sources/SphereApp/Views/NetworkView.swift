@@ -84,7 +84,7 @@ struct NetworkView: View {
                     Text("Recent requests")
                         .font(.headline)
                         .padding(8)
-                    SystemLogView(lines: networkLines, emptyMessage: "No requests recorded.")
+                    SystemLogView(lines: model.networkLogLines, emptyMessage: "No requests recorded.")
                 }
                 .frame(minWidth: 480, idealWidth: 680, maxWidth: .infinity)
                 .layoutPriority(1)
@@ -96,26 +96,6 @@ struct NetworkView: View {
     }
 }
 
-private extension NetworkView {
-    var networkLines: [LogLine] {
-        model.networkEvents.map { event in
-            var detail = "HTTP \(event.url) · host=\(event.host)"
-            if let ruleId = event.ruleId {
-                detail += " · rule=\(ruleId)"
-            }
-            if let extra = event.detail, !extra.isEmpty {
-                detail += " · \(extra)"
-            }
-            return LogLine(
-                id: event.id,
-                timestamp: event.timestamp,
-                status: event.allowed ? "ALLOW" : "BLOCK",
-                statusColor: event.allowed ? .green : .red,
-                message: detail
-            )
-        }
-    }
-}
 
 private struct NetworkRuleRow: View {
     @EnvironmentObject var model: AppModel

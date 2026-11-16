@@ -167,7 +167,7 @@ public final class AgentRunner: @unchecked Sendable {
                 continuation.yield(.toolCallStarted(record))
 
                 do {
-                    let outcome = try await router.invoke(name: call.name, arguments: call.arguments)
+                    let outcome = try await router.invoke(name: call.name, arguments: call.arguments, sessionId: sessionId)
                     record.status = outcome.isError ? .failed : .succeeded
                     record.resultJSON = outcome.text
                     record.finishedAt = Date()

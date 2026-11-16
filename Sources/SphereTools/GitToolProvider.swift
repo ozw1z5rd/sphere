@@ -35,7 +35,7 @@ public final class GitToolProvider: ToolProvider {
         ]
     }
 
-    public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         guard tool == "git" else {
             throw SphereError.protocolError("unknown git tool '\(tool)'")
         }
@@ -44,7 +44,7 @@ public final class GitToolProvider: ToolProvider {
         }
         let rawPath = try requiredString("path", in: arguments)
         let cwd = try workingDirectory(rawPath)
-        _ = try engine.require(moduleId: moduleId, path: cwd.path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: cwd.path, operation: .read)
 
         var gitArguments = ["-C", cwd.path, "--no-pager"]
         switch operation {
@@ -55,7 +55,7 @@ public final class GitToolProvider: ToolProvider {
             if arguments["staged"]?.boolValue == true { gitArguments.append("--staged") }
             if arguments["stat"]?.boolValue == true { gitArguments.append("--stat") }
             if let file = arguments["file"]?.stringValue, !file.isEmpty {
-                _ = try engine.require(moduleId: moduleId, path: inGrant(file, cwd: cwd).path, operation: .read)
+                _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: inGrant(file, cwd: cwd).path, operation: .read)
                 gitArguments += ["--", file]
             }
         case "log":
@@ -69,14 +69,14 @@ public final class GitToolProvider: ToolProvider {
             }
             gitArguments += ["show", "--stat", "--no-color", rev]
             if let file = arguments["file"]?.stringValue, !file.isEmpty {
-                _ = try engine.require(moduleId: moduleId, path: inGrant(file, cwd: cwd).path, operation: .read)
+                _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: inGrant(file, cwd: cwd).path, operation: .read)
                 gitArguments += ["--", file]
             }
         case "blame":
             guard let file = arguments["file"]?.stringValue, !file.isEmpty else {
                 throw SphereError.protocolError("blame requires 'file'")
             }
-            _ = try engine.require(moduleId: moduleId, path: inGrant(file, cwd: cwd).path, operation: .read)
+            _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: inGrant(file, cwd: cwd).path, operation: .read)
             gitArguments += ["blame", "--date=iso", "--", file]
         default:
             throw SphereError.protocolError("unsupported git operation '\(operation)' (read-only status/diff/log/show/blame)")

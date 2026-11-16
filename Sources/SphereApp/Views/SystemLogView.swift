@@ -1,11 +1,12 @@
 import SwiftUI
 
-struct LogLine: Identifiable {
-    let id: String
+public struct LogLine: Identifiable {
+    public let id: String
     let timestamp: Date
     let status: String
     let statusColor: Color
     let message: String
+    var session: String? = nil
 }
 
 /// Console-style log view: timestamp first, then status, then details.
@@ -23,6 +24,11 @@ struct SystemLogView: View {
 
     private let timeWidth: CGFloat = 178
     private let statusWidth: CGFloat = 76
+    private let sessionWidth: CGFloat = 56
+
+    private var hasSession: Bool {
+        lines.contains { $0.session != nil }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,6 +57,10 @@ struct SystemLogView: View {
                 .frame(width: timeWidth, alignment: .leading)
             Text("STATUS")
                 .frame(width: statusWidth, alignment: .leading)
+            if hasSession {
+                Text("SESSION")
+                    .frame(width: sessionWidth, alignment: .leading)
+            }
             Text("DETAILS")
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -71,6 +81,12 @@ struct SystemLogView: View {
                 .frame(width: statusWidth, alignment: .leading)
                 .foregroundStyle(line.statusColor)
                 .fontWeight(.bold)
+
+            if hasSession {
+                Text(line.session ?? "—")
+                    .frame(width: sessionWidth, alignment: .leading)
+                    .foregroundStyle(.secondary)
+            }
 
             Text(line.message)
                 .frame(maxWidth: .infinity, alignment: .leading)

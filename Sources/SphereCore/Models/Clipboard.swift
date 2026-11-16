@@ -4,6 +4,7 @@ import Foundation
 public struct ClipboardEvent: Codable, Sendable, Identifiable {
     public var id: String
     public var sessionId: String?
+    public var sessionNumber: Int?
     /// `read` or `write`.
     public var operation: String
     public var detail: String?
@@ -13,6 +14,7 @@ public struct ClipboardEvent: Codable, Sendable, Identifiable {
     public init(
         id: String = UUID().uuidString,
         sessionId: String? = nil,
+        sessionNumber: Int? = nil,
         operation: String,
         detail: String? = nil,
         allowed: Bool = true,
@@ -20,6 +22,7 @@ public struct ClipboardEvent: Codable, Sendable, Identifiable {
     ) {
         self.id = id
         self.sessionId = sessionId
+        self.sessionNumber = sessionNumber
         self.operation = operation
         self.detail = detail
         self.allowed = allowed

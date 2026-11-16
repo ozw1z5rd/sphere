@@ -452,9 +452,14 @@ private struct SessionRow: View {
                 onCancel: onCancel
             )
 
-            Text(session.updatedAt, style: .time)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text("#\(session.number)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Text(session.updatedAt, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

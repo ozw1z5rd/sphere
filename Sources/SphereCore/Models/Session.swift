@@ -2,6 +2,8 @@ import Foundation
 
 public struct Session: Codable, Sendable, Identifiable {
     public var id: String
+    /// Stable progressive number assigned at creation (shown as `#N`).
+    public var number: Int
     public var title: String
     public var providerId: String?
     public var model: String?
@@ -17,6 +19,7 @@ public struct Session: Codable, Sendable, Identifiable {
 
     public init(
         id: String = UUID().uuidString,
+        number: Int = 0,
         title: String = "New session",
         providerId: String? = nil,
         model: String? = nil,
@@ -27,6 +30,7 @@ public struct Session: Codable, Sendable, Identifiable {
         costUSD: Double = 0
     ) {
         self.id = id
+        self.number = number
         self.title = title
         self.providerId = providerId
         self.model = model
@@ -128,6 +132,7 @@ public enum ToolCallStatus: String, Codable, Sendable {
 public struct ToolCallRecord: Codable, Sendable, Identifiable {
     public var id: String
     public var sessionId: String
+    public var sessionNumber: Int?
     public var moduleId: String
     public var toolName: String
     public var argumentsJSON: String
@@ -139,6 +144,7 @@ public struct ToolCallRecord: Codable, Sendable, Identifiable {
     public init(
         id: String = UUID().uuidString,
         sessionId: String,
+        sessionNumber: Int? = nil,
         moduleId: String,
         toolName: String,
         argumentsJSON: String = "{}",
@@ -149,6 +155,7 @@ public struct ToolCallRecord: Codable, Sendable, Identifiable {
     ) {
         self.id = id
         self.sessionId = sessionId
+        self.sessionNumber = sessionNumber
         self.moduleId = moduleId
         self.toolName = toolName
         self.argumentsJSON = argumentsJSON

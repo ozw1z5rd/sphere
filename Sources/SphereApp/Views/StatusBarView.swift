@@ -3,6 +3,7 @@ import SphereCore
 
 struct StatusBarView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         HStack(spacing: 18) {
@@ -15,11 +16,29 @@ struct StatusBarView: View {
                     help: L10n.t("Time since the session started")
                 )
             }
-            StatusItem(icon: "folder", value: "\(model.accessSummary.total)", help: accessHelp)
-            StatusItem(
+            logButton(
+                kind: .fileAccess,
+                icon: "folder",
+                value: "\(model.accessSummary.total)",
+                help: accessHelp
+            )
+            logButton(
+                kind: .clipboard,
                 icon: "doc.on.clipboard",
                 value: "\(model.clipboardAccessCount)",
                 help: L10n.t("Clipboard accesses in this session")
+            )
+            logButton(
+                kind: .network,
+                icon: "globe",
+                value: "\(model.networkAccessCount)",
+                help: L10n.t("Network requests in this session")
+            )
+            logButton(
+                kind: .tools,
+                icon: "wrench.and.screwdriver",
+                value: "\(model.toolAccessCount)",
+                help: L10n.t("Tool calls in this session")
             )
             Spacer()
             if let provider = model.activeProviderLabel {
@@ -32,6 +51,17 @@ struct StatusBarView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 5)
         .background(.bar)
+    }
+
+    private func logButton(kind: LogKind, icon: String, value: String, help: String) -> some View {
+        Button {
+            model.activeLog = kind
+            openWindow(id: "logs")
+        } label: {
+            StatusItem(icon: icon, value: value, help: help)
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 
     private var tokenText: String {

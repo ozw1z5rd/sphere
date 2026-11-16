@@ -23,6 +23,8 @@ public final class AppModel: ObservableObject {
     @Published public var toolCalls: [ToolCallRecord] = []
     @Published public var clipboardEvents: [ClipboardEvent] = []
     @Published public var clipboardAccessCount = 0
+    @Published public var clipboardReadCount = 0
+    @Published public var clipboardWriteCount = 0
     @Published public var streamingText = ""
     @Published public var input = ""
     @Published public var attachments: [ChatAttachment] = []
@@ -34,6 +36,10 @@ public final class AppModel: ObservableObject {
     @Published public var tools: [ToolDefinition] = []
     @Published public var grants: [PathGrant] = []
     @Published public var accessEvents: [AccessEvent] = []
+    @Published public var toolUsage: [ToolCallRecord] = []
+    @Published public var networkAccessCount = 0
+    @Published public var toolAccessCount = 0
+    @Published public var activeLog: LogKind = .fileAccess
 
     @Published public var screenGrants: [ScreenGrant] = []
     @Published public var windows: [WindowInfo] = []
@@ -87,9 +93,9 @@ public final class AppModel: ObservableObject {
         sessions = (try? runtime.sessions.sessions()) ?? []
         modules = (try? runtime.modules.all()) ?? []
         grants = (try? runtime.permissions.pathGrants()) ?? []
-        accessEvents = (try? runtime.permissions.accessEvents(limit: 200)) ?? []
         screenGrants = (try? runtime.permissions.screenGrants()) ?? []
         reloadMessages()
+        reloadLogs()
         refreshStatus()
         refreshNetwork()
         Task { [weak self] in
@@ -101,24 +107,28 @@ public final class AppModel: ObservableObject {
         guard let runtime, let sessionId = currentSessionId else {
             messages = []
             toolCalls = []
-            clipboardEvents = []
             clipboardAccessCount = 0
+            clipboardReadCount = 0
+            clipboardWriteCount = 0
             return
         }
         messages = (try? runtime.sessions.messages(sessionId: sessionId)) ?? []
         toolCalls = (try? runtime.sessions.toolCalls(sessionId: sessionId)) ?? []
-        clipboardEvents = (try? runtime.clipboardStore.events(sessionId: sessionId)) ?? []
         clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
     }
 
+    /// Loads the global, database-backed logs (last 200 rows each).
+    public func reloadLogs() {
+        guard let runtime else { return }
+        accessEvents = (try? runtime.permissions.accessEvents(limit: 200)) ?? []
+        networkEvents = (try? runtime.networkStore.events(limit: 200)) ?? []
+        toolUsage = (try? runtime.sessions.toolCalls(limit: 200)) ?? []
+        clipboardEvents = (try? runtime.clipboardStore.events(limit: 200)) ?? []
+    }
+
     public func reloadClipboardEvents() {
-        guard let runtime, let sessionId = currentSessionId else {
-            clipboardEvents = []
-            clipboardAccessCount = 0
-            return
-        }
-        clipboardEvents = (try? runtime.clipboardStore.events(sessionId: sessionId)) ?? []
-        clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
+        reloadLogs()
+        refreshActivityCounts()
     }
 
     public func reloadToolCalls() {
@@ -127,6 +137,22 @@ public final class AppModel: ObservableObject {
             return
         }
         toolCalls = (try? runtime.sessions.toolCalls(sessionId: sessionId)) ?? []
+    }
+
+    public func refreshActivityCounts() {
+        guard let runtime, let sessionId = currentSessionId else {
+            clipboardAccessCount = 0
+            clipboardReadCount = 0
+            clipboardWriteCount = 0
+            networkAccessCount = 0
+            toolAccessCount = 0
+            return
+        }
+        clipboardAccessCount = (try? runtime.clipboardStore.count(sessionId: sessionId, allowedOnly: true)) ?? 0
+        clipboardReadCount = (try? runtime.clipboardStore.count(sessionId: sessionId, operation: "read", allowedOnly: true)) ?? 0
+        clipboardWriteCount = (try? runtime.clipboardStore.count(sessionId: sessionId, operation: "write", allowedOnly: true)) ?? 0
+        networkAccessCount = (try? runtime.networkStore.count(sessionId: sessionId)) ?? 0
+        toolAccessCount = (try? runtime.sessions.toolCallCount(sessionId: sessionId)) ?? 0
     }
 
     // MARK: - Sessions
@@ -143,8 +169,11 @@ public final class AppModel: ObservableObject {
             currentSessionId = session.id
             messages = []
             toolCalls = []
-            clipboardEvents = []
             clipboardAccessCount = 0
+            clipboardReadCount = 0
+            clipboardWriteCount = 0
+            networkAccessCount = 0
+            toolAccessCount = 0
             refreshStatus()
         } catch {
             errorMessage = error.localizedDescription
@@ -177,12 +206,16 @@ public final class AppModel: ObservableObject {
                 currentSessionId = nil
                 messages = []
                 toolCalls = []
-                clipboardEvents = []
                 clipboardAccessCount = 0
+                clipboardReadCount = 0
+                clipboardWriteCount = 0
+                networkAccessCount = 0
+                toolAccessCount = 0
                 attachments = []
                 sessionUsage = .zero
             }
             sessions = try runtime.sessions.sessions()
+            reloadLogs()
             if currentSessionId == nil, let next = sessions.first {
                 select(session: next)
             } else {
@@ -297,9 +330,9 @@ public final class AppModel: ObservableObject {
                         reloadMessages()
                     case .toolCallStarted:
                         reloadToolCalls()
-                    case .toolCallFinished(let record):
-                        recordClipboard(record)
+                    case .toolCallFinished:
                         reloadToolCalls()
+                        reloadLogs()
                         refreshStatus()
                     case .usage(let usage):
                         sessionUsage = usage
@@ -324,31 +357,6 @@ public final class AppModel: ObservableObject {
                 errorMessage = error.localizedDescription
             }
         }
-    }
-
-    private func recordClipboard(_ record: ToolCallRecord) {
-        guard let runtime,
-              record.moduleId == "sphere.system",
-              record.toolName == "clipboard_read" || record.toolName == "clipboard_write" else {
-            return
-        }
-        let operation = record.toolName == "clipboard_read" ? "read" : "write"
-        var detail: String?
-        if operation == "write",
-           let text = JSONValue.parse(record.argumentsJSON)["text"]?.stringValue {
-            detail = "\(text.count) chars"
-        } else if let result = record.resultJSON {
-            let firstLine = result.components(separatedBy: .newlines).first ?? result
-            detail = String(firstLine.prefix(160))
-        }
-        let event = ClipboardEvent(
-            sessionId: currentSessionId,
-            operation: operation,
-            detail: detail,
-            allowed: record.status == .succeeded
-        )
-        try? runtime.clipboardStore.record(event)
-        reloadClipboardEvents()
     }
 
     public func cancel() {
@@ -376,6 +384,96 @@ public final class AppModel: ObservableObject {
             sessionUsage = .zero
             accessSummary = (try? runtime.permissions.accessSummary(since: nil)) ?? .empty
         }
+        refreshActivityCounts()
+    }
+
+    public var accessLogLines: [LogLine] {
+        accessEvents.map { event in
+            var detail = "\(event.operation.rawValue.uppercased()) \(event.path) · module=\(event.moduleId)"
+            if let extra = event.detail, !extra.isEmpty {
+                detail += " · \(extra)"
+            }
+            return LogLine(
+                id: event.id,
+                timestamp: event.timestamp,
+                status: event.allowed ? "ALLOW" : "DENY",
+                statusColor: event.allowed ? .green : .red,
+                message: detail,
+                session: sessionLabel(event.sessionNumber)
+            )
+        }
+    }
+
+    public var networkLogLines: [LogLine] {
+        networkEvents.map { event in
+            var detail = "HTTP \(event.url) · host=\(event.host)"
+            if let ruleId = event.ruleId {
+                detail += " · rule=\(ruleId)"
+            }
+            if let extra = event.detail, !extra.isEmpty {
+                detail += " · \(extra)"
+            }
+            return LogLine(
+                id: event.id,
+                timestamp: event.timestamp,
+                status: event.allowed ? "ALLOW" : "BLOCK",
+                statusColor: event.allowed ? .green : .red,
+                message: detail,
+                session: sessionLabel(event.sessionNumber)
+            )
+        }
+    }
+
+    public var toolUsageLogLines: [LogLine] {
+        toolUsage.map { record in
+            let status: String
+            let color: Color
+            switch record.status {
+            case .pending: status = "WAIT"; color = .secondary
+            case .running: status = "RUN"; color = .blue
+            case .succeeded: status = "OK"; color = .green
+            case .failed: status = "FAIL"; color = .red
+            case .denied: status = "DENY"; color = .orange
+            }
+            let args = record.argumentsJSON
+                .replacingOccurrences(of: "\n", with: " ")
+                .prefix(160)
+            let detail = "\(record.toolName) · \(record.moduleId) · \(args)"
+            return LogLine(
+                id: record.id,
+                timestamp: record.startedAt,
+                status: status,
+                statusColor: color,
+                message: detail,
+                session: sessionLabel(record.sessionNumber)
+            )
+        }
+    }
+
+    public var clipboardLogLines: [LogLine] {
+        clipboardEvents.map { event in
+            LogLine(
+                id: event.id,
+                timestamp: event.timestamp,
+                status: event.operation.uppercased(),
+                statusColor: event.allowed ? .green : .red,
+                message: event.detail ?? "-",
+                session: sessionLabel(event.sessionNumber)
+            )
+        }
+    }
+
+    public func logLines(for kind: LogKind) -> [LogLine] {
+        switch kind {
+        case .fileAccess: return accessLogLines
+        case .network: return networkLogLines
+        case .tools: return toolUsageLogLines
+        case .clipboard: return clipboardLogLines
+        }
+    }
+
+    private func sessionLabel(_ number: Int?) -> String? {
+        number.map { "#\($0)" }
     }
 
     public func refreshAccessSummary() {

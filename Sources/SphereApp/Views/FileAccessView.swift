@@ -55,7 +55,7 @@ struct FileAccessView: View {
                     Text("Access log")
                         .font(.headline)
                         .padding(8)
-                    SystemLogView(lines: accessLines, emptyMessage: "No access events yet.")
+                    SystemLogView(lines: model.accessLogLines, emptyMessage: "No access events yet.")
                 }
                 .frame(minWidth: 480, idealWidth: 680, maxWidth: .infinity)
                 .layoutPriority(1)
@@ -64,23 +64,6 @@ struct FileAccessView: View {
     }
 }
 
-private extension FileAccessView {
-    var accessLines: [LogLine] {
-        model.accessEvents.map { event in
-            var detail = "\(event.operation.rawValue.uppercased()) \(event.path) · module=\(event.moduleId)"
-            if let extra = event.detail, !extra.isEmpty {
-                detail += " · \(extra)"
-            }
-            return LogLine(
-                id: event.id,
-                timestamp: event.timestamp,
-                status: event.allowed ? "ALLOW" : "DENY",
-                statusColor: event.allowed ? .green : .red,
-                message: detail
-            )
-        }
-    }
-}
 
 private struct GrantRow: View {
     @EnvironmentObject var model: AppModel

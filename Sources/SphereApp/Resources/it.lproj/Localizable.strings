@@ -225,3 +225,26 @@
 "Clipboard accesses in this session" = "Accessi alla clipboard in questa sessione";
 "Clipboard activity" = "Attività clipboard";
 "No clipboard activity yet." = "Nessuna attività clipboard.";
+
+"SESSION" = "SESSIONE";
+"Clipboard" = "Clipboard";
+"Logs" = "Log";
+"Clipboard control" = "Controllo clipboard";
+"Allow AI to read clipboard" = "Consenti all'AI di leggere la clipboard";
+"Allow AI to write clipboard" = "Consenti all'AI di scrivere nella clipboard";
+"Clipboard access is system-wide. These switches control the built-in clipboard tools." = "L'accesso alla clipboard è a livello di sistema. Questi interruttori controllano i tool clipboard integrati.";
+"Session reads: %d · writes: %d" = "Letture sessione: %d · scritture: %d";
+"%d clipboard accesses in this session" = "%d accessi clipboard in questa sessione";
+"Clipboard preview" = "Anteprima clipboard";
+"Show clipboard preview" = "Mostra anteprima clipboard";
+"The preview is local and is not logged as an AI access." = "L'anteprima è locale e non viene registrata come accesso dell'AI.";
+"Preview" = "Anteprima";
+"Refresh preview" = "Aggiorna anteprima";
+"No text on the clipboard." = "Nessun testo negli appunti.";
+"No tool activity yet." = "Nessuna attività tool.";
+"Apri log accessi file" = "Apri log accessi file";
+"Apri log rete" = "Apri log rete";
+"Apri log uso tool" = "Apri log uso tool";
+"Apri log clipboard" = "Apri log clipboard";
+"Network requests in this session" = "Richieste di rete in questa sessione";
+"Tool calls in this session" = "Chiamate tool in questa sessione";

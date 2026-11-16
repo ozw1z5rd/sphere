@@ -74,7 +74,7 @@ public final class ExecToolProvider: ToolProvider {
         ]
     }
 
-    public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         guard tool == "exec" else {
             throw SphereError.protocolError("unknown exec tool '\(tool)'")
         }
@@ -107,7 +107,7 @@ public final class ExecToolProvider: ToolProvider {
             throw SphereError.protocolError("cwd is not a directory: \(cwd.path)")
         }
         let needsWrite = !Self.isReadOnly(argv: argv)
-        _ = try engine.require(moduleId: moduleId, path: cwd.path, operation: needsWrite ? .edit : .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: cwd.path, operation: needsWrite ? .edit : .read)
 
         let timeout = min(max(arguments["timeout_ms"]?.numberValue.map(Int.init) ?? 30_000, 1_000), 120_000)
         let maxOutput = min(max(arguments["max_output_bytes"]?.numberValue.map(Int.init) ?? 200_000, 4_096), 500_000)

@@ -9,10 +9,12 @@ public final class SystemToolProvider: ToolProvider {
     public let providerName = "System"
 
     private let permissions: PermissionStore
+    private let clipboardStore: ClipboardStore
     private let audit: AuditLog
 
-    public init(permissions: PermissionStore, audit: AuditLog = AuditLog()) {
+    public init(permissions: PermissionStore, clipboardStore: ClipboardStore, audit: AuditLog = AuditLog()) {
         self.permissions = permissions
+        self.clipboardStore = clipboardStore
         self.audit = audit
     }
 
@@ -46,11 +48,11 @@ public final class SystemToolProvider: ToolProvider {
         ]
     }
 
-    public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         switch tool {
         case "system_info": return try info()
-        case "clipboard_read": return try clipboardRead(arguments)
-        case "clipboard_write": return try clipboardWrite(arguments)
+        case "clipboard_read": return try clipboardRead(arguments, sessionId: sessionId)
+        case "clipboard_write": return try clipboardWrite(arguments, sessionId: sessionId)
         default: throw SphereError.protocolError("unknown system tool '\(tool)'")
         }
     }
@@ -88,7 +90,7 @@ public final class SystemToolProvider: ToolProvider {
         return ToolOutcome(text: lines.joined(separator: "\n"))
     }
 
-    private func clipboardRead(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func clipboardRead(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let maxChars = min(max(arguments["max_chars"]?.numberValue.map(Int.init) ?? 20_000, 1), 100_000)
         let pasteboard = NSPasteboard.general
         let types = (pasteboard.types ?? []).map(\.rawValue)
@@ -101,11 +103,15 @@ public final class SystemToolProvider: ToolProvider {
         } else {
             lines.append("No text or file URLs on the clipboard.")
         }
+        let detail = "types: " + types.prefix(4).joined(separator: ", ")
+        try? clipboardStore.record(
+            ClipboardEvent(sessionId: sessionId, operation: "read", detail: detail, allowed: true)
+        )
         audit.write("system", "clipboard_read")
         return ToolOutcome(text: lines.joined(separator: "\n"))
     }
 
-    private func clipboardWrite(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func clipboardWrite(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         guard let text = arguments["text"]?.stringValue else {
             throw SphereError.protocolError("missing argument 'text'")
         }
@@ -114,6 +120,14 @@ public final class SystemToolProvider: ToolProvider {
         guard pasteboard.setString(text, forType: .string) else {
             return ToolOutcome(text: "Could not write to the clipboard.", isError: true)
         }
+        try? clipboardStore.record(
+            ClipboardEvent(
+                sessionId: sessionId,
+                operation: "write",
+                detail: "\(text.count) chars",
+                allowed: true
+            )
+        )
         audit.write("system", "clipboard_write \(text.utf8.count) bytes")
         return ToolOutcome(text: "Wrote \(text.count) characters to the clipboard.")
     }

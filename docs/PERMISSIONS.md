@@ -22,6 +22,8 @@ cases the principle is: default deny, explicit consent, audit.
    - increments the grant's `read_count`/`write_count`.
 4. On denial the tool returns an error and the event is still recorded
    (`allowed = 0`).
+5. Each event carries the session id/number when invoked by the agent, so logs
+   identify the session that performed the operation.
 
 ### Why the broker is central
 
@@ -113,10 +115,10 @@ through Sphere.
 ## Clipboard access
 
 `clipboard_read` and `clipboard_write` are system-wide (not path-scoped). Every
-successful or denied invocation is recorded in `clipboard_events` with the
-session, operation, detail and result; the status bar shows a per-session
-counter and the Tools tab shows the log. Use the Tools tab to disable either
-tool.
+invocation is recorded in `clipboard_events` with the session number, operation
+and detail; the status bar shows a per-session counter and the Clipboard tab
+shows the log. The Clipboard tab can disable either tool and offers an optional
+local preview (not logged as an AI access).
 
 ## Internet access
 

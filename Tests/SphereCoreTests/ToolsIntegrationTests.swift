@@ -26,25 +26,25 @@ final class ToolsIntegrationTests: XCTestCase {
         {"providers": [{"name": "deepseek", "model": "deepseek-chat"}], "count": 2}
         """.write(to: root.appendingPathComponent("config.json"), atomically: true, encoding: .utf8)
 
-        let stat = try await broker.invoke(tool: "fs_stat", arguments: .object(["path": .string(root.appendingPathComponent("logo.png").path)]))
+        let stat = try await broker.invoke(tool: "fs_stat", arguments: .object(["path": .string(root.appendingPathComponent("logo.png").path)]), sessionId: nil)
         XCTAssertTrue(stat.text.contains("detected: png"))
         XCTAssertTrue(stat.text.contains("mode:"))
 
         let bytes = try await broker.invoke(tool: "fs_read_bytes", arguments: .object([
             "path": .string(root.appendingPathComponent("logo.png").path),
             "length": .number(8),
-        ]))
+        ]), sessionId: nil)
         XCTAssertTrue(bytes.text.contains("hex: 89504e470d0a1a0a"))
 
         let selected = try await broker.invoke(tool: "fs_select", arguments: .object([
             "path": .string(root.appendingPathComponent("config.json").path),
             "selector": .string("providers[0].model"),
-        ]))
+        ]), sessionId: nil)
         XCTAssertTrue(selected.text.contains("deepseek-chat"))
 
         let image = try await broker.invoke(tool: "image_inspect", arguments: .object([
             "path": .string(root.appendingPathComponent("logo.png").path),
-        ]))
+        ]), sessionId: nil)
         XCTAssertTrue(image.text.contains("dimensions: 1×1 px"))
         XCTAssertTrue(image.text.contains("format: public.png"))
     }
@@ -62,7 +62,7 @@ final class ToolsIntegrationTests: XCTestCase {
             "path": .string(root.path),
             "pattern": .string("hello"),
             "respect_gitignore": .bool(true),
-        ]))
+        ]), sessionId: nil)
         XCTAssertTrue(outcome.text.contains("a.txt"))
         XCTAssertFalse(outcome.text.contains("ignored.txt"), outcome.text)
         XCTAssertTrue(outcome.text.contains("skipped"), outcome.text)
@@ -105,14 +105,14 @@ final class ToolsIntegrationTests: XCTestCase {
         let status = try await provider.invoke(tool: "git", arguments: .object([
             "operation": .string("status"),
             "path": .string(root.path),
-        ]))
+        ]), sessionId: nil)
         XCTAssertFalse(status.isError, status.text)
         XCTAssertTrue(status.text.contains("##"))
 
         let log = try await provider.invoke(tool: "git", arguments: .object([
             "operation": .string("log"),
             "path": .string(root.path),
-        ]))
+        ]), sessionId: nil)
         XCTAssertTrue(log.text.contains("initial"))
     }
 
@@ -127,7 +127,7 @@ final class ToolsIntegrationTests: XCTestCase {
             "mode": .string("replace"),
             "old": .string("beta"),
             "new": .string("BETA"),
-        ]))
+        ]), sessionId: nil)
         XCTAssertFalse(replaced.isError)
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "alpha\nBETA\ngamma\n")
 
@@ -144,7 +144,7 @@ final class ToolsIntegrationTests: XCTestCase {
             "path": .string(file.path),
             "mode": .string("patch"),
             "patch": .string(patch),
-        ]))
+        ]), sessionId: nil)
         XCTAssertFalse(patched.isError)
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "alpha\nbeta\ngamma\n")
     }

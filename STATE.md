@@ -42,7 +42,7 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 ## 3. Current status
 
 - `swift build` → **OK**
-- `swift test` → **49 tests, 0 failures**
+- `swift test` → **55 tests, 0 failures**
 - App bundle: `dist/Sphere.app` (valid ad-hoc signature)
 - Launch: `./scripts/build-app.sh release --open`
 - At the time of the last update the app is running.
@@ -109,10 +109,15 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
   allowlist, no shell, granted cwd, timeout, no network, writes limited to the
   granted root via `sandbox-exec`.
 - **Tools tab**: per-tool enable/disable (all enabled by default; disabled
-  tools are hidden from the model catalog and rejected at invocation) plus a
-  session **Clipboard activity** log.
-- **Clipboard accounting**: status-bar counter for AI clipboard accesses and
-  persistent `clipboard_events` log.
+  tools are hidden from the model catalog and rejected at invocation) plus the
+  global last-200 tool usage log.
+- **Clipboard tab**: read/write controls, optional local preview and global
+  clipboard log.
+- **Session numbers**: stable progressive `#N` badges, also recorded in every
+  log (access, network, tools, clipboard).
+- **Logs window**: dedicated window with File Access / Network / Tools /
+  Clipboard logs, last 200 rows, opened from Settings and the status bar.
+- **Status bar**: clickable file/clipboard/network/tool counters.
 - **Collapsible AI responses** and streaming delta coalescing (~20 Hz).
 - **Default allow** ban list: URL (prefix), domain (+subdomains), IP/CIDR
   (with DNS resolution). Checked before the request and on the final URL.
@@ -187,7 +192,7 @@ Sources/
   SphereRuntime/    SphereRuntime (wiring), AgentRunner
   SphereApp/        SwiftUI GUI
   SphereCLI/        CLI
-Tests/SphereCoreTests/SphereCoreTests.swift   (49 tests)
+Tests/SphereCoreTests/SphereCoreTests.swift   (55 tests)
 examples/hello-module/                        example MCP module
 scripts/                                      build-app, package-module, icon
 Support/Info.plist, Support/Sphere.icns
@@ -202,11 +207,13 @@ Main UI files:
 - `Sources/SphereApp/Views/FileAccessView.swift` — grants + access log.
 - `Sources/SphereApp/Views/NetworkView.swift` — bans + requests.
 - `Sources/SphereApp/Views/SystemLogView.swift` — Console-style log.
-- `Sources/SphereApp/Views/ToolsView.swift` — per-tool enable/disable + clipboard log.
+- `Sources/SphereApp/Views/ToolsView.swift` — per-tool enable/disable + tool usage log.
+- `Sources/SphereApp/Views/ClipboardView.swift` — clipboard controls, preview and log.
+- `Sources/SphereApp/Views/LogsView.swift` — dedicated logs window.
 - `Sources/SphereApp/Views/ToolActivityView.swift` — per-session tool calls.
 - `Sources/SphereApp/Views/AboutView.swift`, `StatusBarView.swift`.
 
-### DB schema (migrations v1–v6)
+### DB schema (migrations v1–v7)
 
 v1: `sessions`, `messages`, `tool_calls`, `modules`, `path_grants`,
 `access_events`, `screen_grants`, `settings`, `schema_migrations`
@@ -215,6 +222,7 @@ v3: message attachments (`attachments_json`)
 v4: `network_rules`, `network_events`
 v5: assistant tool calls (`tool_calls_json`)
 v6: `clipboard_events` (operation, detail, allowed, timestamp)
+v7: session numbers; session attribution on access/network/clipboard/tool logs
 
 ### Data paths
 
@@ -296,7 +304,7 @@ Keychain service: com.sphere.app (one-time import only)
 ## 9. How to resume
 
 1. `cd sphere`
-2. `swift test` to confirm 49/49.
+2. `swift test` to confirm 55/55.
 3. `./scripts/build-app.sh release --open` to launch the app.
 4. Read `docs/USAGE.md` for usage, `docs/ARCHITECTURE.md` for the design.
 5. Pick an item from section 8 and proceed.

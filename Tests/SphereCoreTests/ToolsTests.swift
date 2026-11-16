@@ -114,7 +114,8 @@ final class ToolHelpersTests: XCTestCase {
             arguments: .object([
                 "argv": .array([.string("ls")]),
                 "cwd": .string(root.path),
-            ])
+            ]),
+            sessionId: nil
         )
         XCTAssertFalse(outcome.isError)
         XCTAssertTrue(outcome.text.contains("exit: 0"))
@@ -126,7 +127,8 @@ final class ToolHelpersTests: XCTestCase {
                 arguments: .object([
                     "argv": .array([.string("ls")]),
                     "cwd": .string(root.path),
-                ])
+                ]),
+                sessionId: nil
             )
             XCTFail("expected disabled exec to throw")
         } catch {
@@ -155,7 +157,7 @@ private final class StubToolProvider: ToolProvider {
         ]
     }
 
-    func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         ToolOutcome(text: tool)
     }
 }
@@ -177,8 +179,21 @@ private final class CustomToolProvider: ToolProvider {
         [ToolDefinition(name: toolName, originalName: toolName, moduleId: moduleId, description: toolName)]
     }
 
-    func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         ToolOutcome(text: result)
+    }
+}
+
+private final class SessionCapturingProvider: ToolProvider {
+    let moduleId = "capture"
+    let providerName = "Capture"
+
+    func definitions() -> [ToolDefinition] {
+        [ToolDefinition(name: "capture_tool", originalName: "tool", moduleId: moduleId, description: "tool")]
+    }
+
+    func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
+        ToolOutcome(text: sessionId ?? "nil")
     }
 }
 
@@ -240,6 +255,12 @@ final class ToolRouterTests: XCTestCase {
         )
         let visible = await router.definitions()
         XCTAssertEqual(visible.map(\.name), ["stub_two"])
+    }
+
+    func testRouterPassesSessionIdToProvider() async throws {
+        let router = ToolRouter(host: MCPModuleHost(), providers: [SessionCapturingProvider()])
+        let outcome = try await router.invoke(name: "capture_tool", arguments: .object([:]), sessionId: "session-1")
+        XCTAssertEqual(outcome.text, "session-1")
     }
 
     func testCollisionKeepsFirstProviderAndInvokeUsesIt() async throws {

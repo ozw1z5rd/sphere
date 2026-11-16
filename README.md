@@ -18,7 +18,7 @@ plug-in contract for the knowledge base.
 
 ```bash
 swift build                 # compile everything
-swift test                  # 49 tests (manifest, policy, store, tools, installer)
+swift test                  # 55 tests (manifest, policy, store, tools, installer)
 swift run Sphere            # launch the GUI app
 swift run sphere-cli help   # launch the CLI
 ```
@@ -128,7 +128,11 @@ Besides MCP modules, Sphere ships in-process tools:
 
 The **Tools** tab lists every tool exposed to the model and lets you enable or
 disable each one (all enabled by default; disabled tools are hidden from the
-catalog and rejected if called).
+catalog and rejected if called) and shows the latest 200 tool calls. A dedicated
+**Clipboard** tab controls clipboard read/write, offers an optional local
+preview and shows the clipboard log. A dedicated **Logs** window (opened from
+Settings or the status bar) shows the last 200 file-access, network, tool and
+clipboard operations with the session number (`#N`).
 
 ## Principles
 

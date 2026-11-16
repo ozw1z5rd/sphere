@@ -260,7 +260,8 @@ struct SphereCLI {
         let runtime = try SphereRuntime()
         let outcome = try await runtime.web.invoke(
             tool: "web_fetch",
-            arguments: .object(["url": .string(raw)])
+            arguments: .object(["url": .string(raw)]),
+            sessionId: nil
         )
         print(outcome.text)
     }

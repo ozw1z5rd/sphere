@@ -94,7 +94,7 @@ public actor ToolRouter {
         await definitions().first(where: { $0.name == name })
     }
 
-    public func invoke(name: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(name: String, arguments: JSONValue, sessionId: String? = nil) async throws -> ToolOutcome {
         guard !disabledTools.contains(name) else {
             throw SphereError.permissionDenied("tool '\(name)' is disabled")
         }
@@ -121,7 +121,7 @@ public actor ToolRouter {
         if let provider = providers.first(where: { provider in
             provider.definitions().contains { $0.name == definition.name }
         }) {
-            return try await provider.invoke(tool: definition.originalName, arguments: arguments)
+            return try await provider.invoke(tool: definition.originalName, arguments: arguments, sessionId: sessionId)
         }
 
         let result = try await host.callTool(

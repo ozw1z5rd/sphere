@@ -93,6 +93,10 @@ UI/CLI
       └─ repeats until the model stops calling tools (max 12 steps)
 ```
 
+Sessions receive a stable progressive `#N`; `AgentRunner` passes the session id
+to every tool invocation, and file/network/clipboard/tool logs persist both the
+session id and number for display. All log queries return the newest 200 rows.
+
 Tool names: normalized `<module>_<tool>`. The catalog is aggregated by
 `ToolRouter.definitions()`, which filters tools that are disabled
 (`config.disabledTools`) **and** tools whose policy is `deny` (or `ask` without
@@ -110,8 +114,9 @@ is written to the audit log, and dispatch uses the winning tool's provider
 - `sphere.web`: `web_fetch` and `web_search` (DuckDuckGo HTML), behind the
   network ban list.
 - `sphere.git`: read-only status/diff/log/show/blame via `/usr/bin/git`.
-- `sphere.system`: `system_info` and clipboard read/write (logged in
-  `clipboard_events`, with a per-session counter in the status bar).
+- `sphere.system`: `system_info` and clipboard read/write (logged directly in
+  `clipboard_events` with session attribution, with a per-session counter in the
+  status bar and a dedicated Clipboard tab).
 - `sphere.exec`: opt-in argv-only sandboxed command execution. Child processes
   run under `sandbox-exec` with network denied and writes limited to the
   granted root; see [PERMISSIONS.md](PERMISSIONS.md).
@@ -162,7 +167,8 @@ in `Database.swift` (serialized with a lock).
 | `clipboard_events` | clipboard read/write accesses (session, operation, detail) |
 
 Migrations: v1 base schema, v2 session token/cost, v3 message attachments,
-v4 network rules and events, v5 message tool calls, v6 clipboard events.
+v4 network rules and events, v5 message tool calls, v6 clipboard events,
+v7 session numbers + session attribution on access/network/clipboard/tool logs.
 
 ## Storage
 

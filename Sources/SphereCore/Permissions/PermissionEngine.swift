@@ -23,10 +23,11 @@ public final class PermissionEngine {
     }
 
     /// Evaluates and records an audit event, updating per-grant counters.
-    public func authorize(moduleId: String, path: String, operation: FileOperation) throws -> AccessDecision {
+    public func authorize(moduleId: String, sessionId: String? = nil, path: String, operation: FileOperation) throws -> AccessDecision {
         let evaluation = try check(path: path, operation: operation)
         let event = AccessEvent(
             grantId: evaluation.grant?.id,
+            sessionId: sessionId,
             moduleId: moduleId,
             path: PathPolicy.normalize(path),
             operation: operation,
@@ -44,8 +45,8 @@ public final class PermissionEngine {
 
     /// Throws unless the path is allowed for the given operation.
     @discardableResult
-    public func require(moduleId: String, path: String, operation: FileOperation) throws -> PathGrant {
-        let decision = try authorize(moduleId: moduleId, path: path, operation: operation)
+    public func require(moduleId: String, sessionId: String? = nil, path: String, operation: FileOperation) throws -> PathGrant {
+        let decision = try authorize(moduleId: moduleId, sessionId: sessionId, path: path, operation: operation)
         guard decision.allowed, let grant = decision.grant else {
             throw SphereError.pathOutsideGrant(PathPolicy.normalize(path))
         }

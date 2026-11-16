@@ -11,6 +11,7 @@ struct ToolsView: View {
             HStack(spacing: 10) {
                 Button {
                     Task { await model.refreshTools() }
+                    model.reloadLogs()
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
@@ -67,22 +68,23 @@ struct ToolsView: View {
                 }
                 .frame(minWidth: 420, idealWidth: 520)
 
-                clipboardPanel
+                toolUsagePanel
                     .frame(minWidth: 320, idealWidth: 420, maxWidth: .infinity)
             }
         }
         .onAppear {
             Task { await model.refreshTools() }
+            model.reloadLogs()
         }
     }
 
-    private var clipboardPanel: some View {
+    private var toolUsagePanel: some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
-                Label("Clipboard activity", systemImage: "doc.on.clipboard")
+                Label("Tool activity", systemImage: "wrench.and.screwdriver")
                     .font(.caption.weight(.semibold))
                 Spacer()
-                Text("\(model.clipboardEvents.count)")
+                Text("\(model.toolUsage.count)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -93,16 +95,8 @@ struct ToolsView: View {
             Divider()
 
             SystemLogView(
-                lines: model.clipboardEvents.map { event in
-                    LogLine(
-                        id: event.id,
-                        timestamp: event.timestamp,
-                        status: event.operation.uppercased(),
-                        statusColor: event.allowed ? .green : .red,
-                        message: event.detail ?? "-"
-                    )
-                },
-                emptyMessage: "No clipboard activity yet."
+                lines: model.toolUsageLogLines,
+                emptyMessage: "No tool activity yet."
             )
         }
         .background(.background)

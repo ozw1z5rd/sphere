@@ -47,6 +47,8 @@ public struct NetworkRule: Codable, Sendable, Identifiable {
 
 public struct NetworkEvent: Codable, Sendable, Identifiable {
     public var id: String
+    public var sessionId: String?
+    public var sessionNumber: Int?
     public var url: String
     public var host: String
     public var allowed: Bool
@@ -56,6 +58,8 @@ public struct NetworkEvent: Codable, Sendable, Identifiable {
 
     public init(
         id: String = UUID().uuidString,
+        sessionId: String? = nil,
+        sessionNumber: Int? = nil,
         url: String,
         host: String,
         allowed: Bool,
@@ -64,6 +68,8 @@ public struct NetworkEvent: Codable, Sendable, Identifiable {
         timestamp: Date = Date()
     ) {
         self.id = id
+        self.sessionId = sessionId
+        self.sessionNumber = sessionNumber
         self.url = url
         self.host = host
         self.allowed = allowed

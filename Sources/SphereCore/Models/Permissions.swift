@@ -56,6 +56,8 @@ public struct PathGrant: Codable, Sendable, Identifiable {
 public struct AccessEvent: Codable, Sendable, Identifiable {
     public var id: String
     public var grantId: String?
+    public var sessionId: String?
+    public var sessionNumber: Int?
     public var moduleId: String
     public var path: String
     public var operation: FileOperation
@@ -66,6 +68,8 @@ public struct AccessEvent: Codable, Sendable, Identifiable {
     public init(
         id: String = UUID().uuidString,
         grantId: String? = nil,
+        sessionId: String? = nil,
+        sessionNumber: Int? = nil,
         moduleId: String,
         path: String,
         operation: FileOperation,
@@ -75,6 +79,8 @@ public struct AccessEvent: Codable, Sendable, Identifiable {
     ) {
         self.id = id
         self.grantId = grantId
+        self.sessionId = sessionId
+        self.sessionNumber = sessionNumber
         self.moduleId = moduleId
         self.path = path
         self.operation = operation

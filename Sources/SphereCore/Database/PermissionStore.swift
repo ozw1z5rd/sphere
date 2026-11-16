@@ -45,12 +45,14 @@ public final class PermissionStore {
     public func recordAccess(_ event: AccessEvent) throws {
         try database.run(
             """
-            INSERT INTO access_events(id, grant_id, module_id, path, operation, allowed, detail, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO access_events(id, grant_id, session_id, session_number, module_id, path, operation, allowed, detail, timestamp)
+            VALUES (?, ?, ?, (SELECT number FROM sessions WHERE id = ?), ?, ?, ?, ?, ?, ?)
             """,
             [
                 .text(event.id),
                 event.grantId.map(SQLiteValue.text) ?? .null,
+                event.sessionId.map(SQLiteValue.text) ?? .null,
+                event.sessionId.map(SQLiteValue.text) ?? .null,
                 .text(event.moduleId),
                 .text(event.path),
                 .text(event.operation.rawValue),
@@ -185,6 +187,8 @@ public final class PermissionStore {
         return AccessEvent(
             id: id,
             grantId: row.string("grant_id"),
+            sessionId: row.string("session_id"),
+            sessionNumber: row.int("session_number").map(Int.init),
             moduleId: moduleId,
             path: path,
             operation: operation,

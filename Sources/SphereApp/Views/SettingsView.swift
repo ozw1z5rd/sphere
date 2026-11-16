@@ -530,6 +530,7 @@ private struct AppearanceSection: View {
 
 private struct DiagnosticsSection: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         GroupBox("Diagnostica") {
@@ -545,6 +546,14 @@ private struct DiagnosticsSection: View {
                     Button("Apri log HTTP") { model.openLog(named: "http.log") }
                     Button("Apri log Keychain") { model.openLog(named: "keychain.log") }
                     Button("Apri cartella Logs") { model.revealLogsFolder() }
+                }
+                HStack {
+                    Button("Apri log accessi file") { openLog(.fileAccess) }
+                    Button("Apri log rete") { openLog(.network) }
+                }
+                HStack {
+                    Button("Apri log uso tool") { openLog(.tools) }
+                    Button("Apri log clipboard") { openLog(.clipboard) }
                 }
                 HStack {
                     Button("Importa chiavi dal Keychain") { model.importKeysFromKeychain() }
@@ -565,6 +574,11 @@ private struct DiagnosticsSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(6)
         }
+    }
+
+    private func openLog(_ kind: LogKind) {
+        model.activeLog = kind
+        openWindow(id: "logs")
     }
 }
 

@@ -11,11 +11,12 @@ public final class ClipboardStore {
     public func record(_ event: ClipboardEvent) throws {
         try database.run(
             """
-            INSERT INTO clipboard_events(id, session_id, operation, detail, allowed, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO clipboard_events(id, session_id, session_number, operation, detail, allowed, timestamp)
+            VALUES (?, ?, (SELECT number FROM sessions WHERE id = ?), ?, ?, ?, ?)
             """,
             [
                 .text(event.id),
+                event.sessionId.map(SQLiteValue.text) ?? .null,
                 event.sessionId.map(SQLiteValue.text) ?? .null,
                 .text(event.operation),
                 event.detail.map(SQLiteValue.text) ?? .null,
@@ -38,12 +39,20 @@ public final class ClipboardStore {
         return try database.query(sql, values).compactMap(decode)
     }
 
-    public func count(sessionId: String? = nil, allowedOnly: Bool = false) throws -> Int {
+    public func count(
+        sessionId: String? = nil,
+        operation: String? = nil,
+        allowedOnly: Bool = false
+    ) throws -> Int {
         var clauses: [String] = []
         var values: [SQLiteValue] = []
         if let sessionId {
             clauses.append("session_id = ?")
             values.append(.text(sessionId))
+        }
+        if let operation {
+            clauses.append("operation = ?")
+            values.append(.text(operation))
         }
         if allowedOnly {
             clauses.append("allowed = 1")
@@ -62,6 +71,7 @@ public final class ClipboardStore {
         return ClipboardEvent(
             id: id,
             sessionId: row.string("session_id"),
+            sessionNumber: row.int("session_number").map(Int.init),
             operation: operation,
             detail: row.string("detail"),
             allowed: row.bool("allowed") ?? true,

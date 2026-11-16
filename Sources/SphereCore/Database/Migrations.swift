@@ -151,6 +151,32 @@ public enum Migrations {
         CREATE INDEX IF NOT EXISTS idx_clipboard_events_time ON clipboard_events(timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_clipboard_events_session ON clipboard_events(session_id, timestamp DESC);
         """),
+        Migration(version: 7, sql: """
+        ALTER TABLE sessions ADD COLUMN number INTEGER NOT NULL DEFAULT 0;
+        UPDATE sessions SET number = (
+            SELECT COUNT(*) FROM sessions AS older
+            WHERE older.created_at < sessions.created_at
+               OR (older.created_at = sessions.created_at AND older.rowid <= sessions.rowid)
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_number ON sessions(number);
+
+        ALTER TABLE access_events ADD COLUMN session_id TEXT;
+        ALTER TABLE access_events ADD COLUMN session_number INTEGER;
+        ALTER TABLE network_events ADD COLUMN session_id TEXT;
+        ALTER TABLE network_events ADD COLUMN session_number INTEGER;
+        ALTER TABLE clipboard_events ADD COLUMN session_number INTEGER;
+        ALTER TABLE tool_calls ADD COLUMN session_number INTEGER;
+
+        UPDATE clipboard_events SET session_number = (
+            SELECT number FROM sessions WHERE sessions.id = clipboard_events.session_id
+        ) WHERE session_id IS NOT NULL;
+        UPDATE tool_calls SET session_number = (
+            SELECT number FROM sessions WHERE sessions.id = tool_calls.session_id
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_access_events_session ON access_events(session_id, timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_network_events_session ON network_events(session_id, timestamp DESC);
+        """),
     ]
 
     public static func migrate(_ database: Database) throws {

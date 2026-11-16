@@ -55,11 +55,13 @@ public final class NetworkStore {
     public func recordEvent(_ event: NetworkEvent) throws {
         try database.run(
             """
-            INSERT INTO network_events(id, url, host, allowed, rule_id, detail, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO network_events(id, session_id, session_number, url, host, allowed, rule_id, detail, timestamp)
+            VALUES (?, ?, (SELECT number FROM sessions WHERE id = ?), ?, ?, ?, ?, ?, ?)
             """,
             [
                 .text(event.id),
+                event.sessionId.map(SQLiteValue.text) ?? .null,
+                event.sessionId.map(SQLiteValue.text) ?? .null,
                 .text(event.url),
                 .text(event.host),
                 .integer(event.allowed ? 1 : 0),
@@ -75,6 +77,13 @@ public final class NetworkStore {
             "SELECT * FROM network_events ORDER BY timestamp DESC LIMIT ?",
             [.integer(Int64(limit))]
         ).compactMap(decodeEvent)
+    }
+
+    public func count(sessionId: String) throws -> Int {
+        try database.query(
+            "SELECT COUNT(*) AS total FROM network_events WHERE session_id = ?",
+            [.text(sessionId)]
+        ).first?.int("total").map(Int.init) ?? 0
     }
 
     public func summary(since start: Date? = nil) throws -> NetworkSummary {
@@ -129,6 +138,8 @@ public final class NetworkStore {
         else { return nil }
         return NetworkEvent(
             id: id,
+            sessionId: row.string("session_id"),
+            sessionNumber: row.int("session_number").map(Int.init),
             url: url,
             host: host,
             allowed: row.bool("allowed") ?? false,

@@ -126,7 +126,12 @@ At the bottom of the main window the status bar is always visible with:
 | `$` | estimated session cost, computed with the model's price list |
 | `clock` | time elapsed since the start of the session (updated every second) |
 | `folder` | number of filesystem accesses in the session (tooltip: read/write/denied) |
-| `clipboard` | number of clipboard accesses by the AI in the session |
+| `clipboard` | clipboard accesses by the AI in the session (click: clipboard log) |
+| `globe` | network requests in the session (click: network log) |
+| `wrench` | tool calls in the session (click: tool usage log) |
+
+The folder icon also opens the file-access log. All four clickable counters open
+the Logs window on the matching section.
 
 On the right, the active provider and model are shown.
 
@@ -245,6 +250,24 @@ The built-in filesystem broker (`sphere.filesystem`) is the only way to have
 on its own cannot be confined per-path in a non-sandboxed app: for these modules the
 grant is declarative/audit. See [PERMISSIONS.md](PERMISSIONS.md).
 
+## Session numbers
+
+Each session gets a stable progressive number shown as `#N` under its name.
+The number is also shown in the file-access, network, tool and clipboard logs,
+so every operation can be traced back to the session that produced it. Deleting
+a session does not reuse its number; older log rows without session attribution
+show `—`.
+
+## Logs window
+
+The **Logs** window is opened with:
+
+- **Settings → Diagnostica → Apri log accessi file / rete / uso tool / clipboard**;
+- the status-bar icons: folder, clipboard, globe and wrench.
+
+It has a selector for **File Access / Network / Tools / Clipboard** and shows the
+last 200 global rows, with the session column.
+
 ## Tools tab
 
 The **Tools** tab lists every tool the AI can use, grouped by module/provider.
@@ -257,9 +280,19 @@ installing or enabling a module).
 `exec` also requires enabling sandboxed execution in **Settings → Tools**;
 the note in its row reminds you.
 
-The right pane of the **Tools** tab shows the **Clipboard activity** log
-(`clipboard_events`): time, READ/WRITE and result for every clipboard access in
-the current session.
+The right pane of the **Tools** tab shows the global **tool usage log**
+(`tool_calls`, last 200) with session number, status and a compact argument
+preview.
+
+## Clipboard
+
+The **Clipboard** tab works like File Access:
+
+- left: switches to allow/deny `clipboard_read` and `clipboard_write`, session
+  read/write counters, and an optional local **preview** (default off, capped at
+  2,000 characters; refreshing the preview is local and is not logged as an AI
+  access);
+- right: the global clipboard log (last 200, with `#N`).
 
 ## 6. Screen access
 

@@ -80,9 +80,9 @@ public final class WebToolProvider: ToolProvider {
         ]
     }
 
-    public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         if tool == "web_search" {
-            return try await search(arguments)
+            return try await search(arguments, sessionId: sessionId)
         }
         guard tool == "web_fetch" else {
             throw SphereError.protocolError("unknown web tool '\(tool)'")
@@ -100,7 +100,7 @@ public final class WebToolProvider: ToolProvider {
             throw SphereError.protocolError("URL has no host")
         }
 
-        try await authorize(url: url, host: host)
+        try await authorize(url: url, host: host, sessionId: sessionId)
 
         let format = arguments["format"]?.stringValue ?? "text"
         let requestedBytes = arguments["max_bytes"]?.numberValue.map { Int($0) } ?? defaultMaxBytes
@@ -120,7 +120,7 @@ public final class WebToolProvider: ToolProvider {
         }
 
         if let finalURL = http.url, finalURL != url {
-            try await authorize(url: finalURL, host: finalURL.host ?? host)
+            try await authorize(url: finalURL, host: finalURL.host ?? host, sessionId: sessionId)
         }
 
         let contentType = http.value(forHTTPHeaderField: "Content-Type") ?? "unknown"
@@ -155,7 +155,7 @@ public final class WebToolProvider: ToolProvider {
         )
     }
 
-    private func search(_ arguments: JSONValue) async throws -> ToolOutcome {
+    private func search(_ arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         guard let query = arguments["query"]?.stringValue,
               !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw SphereError.protocolError("missing argument 'query'")
@@ -168,7 +168,7 @@ public final class WebToolProvider: ToolProvider {
         guard let url = components.url, let host = url.host else {
             throw SphereError.protocolError("could not build the search URL")
         }
-        try await authorize(url: url, host: host)
+        try await authorize(url: url, host: host, sessionId: sessionId)
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -183,7 +183,7 @@ public final class WebToolProvider: ToolProvider {
             throw SphereError.protocolError("missing HTTP response")
         }
         if let finalURL = http.url, finalURL != url {
-            try await authorize(url: finalURL, host: finalURL.host ?? host)
+            try await authorize(url: finalURL, host: finalURL.host ?? host, sessionId: sessionId)
         }
         guard (200..<400).contains(http.statusCode) else {
             return ToolOutcome(
@@ -279,7 +279,7 @@ public final class WebToolProvider: ToolProvider {
         return text
     }
 
-    private func authorize(url: URL, host: String) async throws {
+    private func authorize(url: URL, host: String, sessionId: String?) async throws {
         let evaluation = await policy.evaluate(url: url)
         let detail: String?
         if evaluation.blocked {
@@ -290,6 +290,7 @@ public final class WebToolProvider: ToolProvider {
             detail = evaluation.reason
         }
         let event = NetworkEvent(
+            sessionId: sessionId,
             url: url.absoluteString,
             host: host,
             allowed: !evaluation.blocked,

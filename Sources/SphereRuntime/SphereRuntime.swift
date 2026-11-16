@@ -56,7 +56,7 @@ public final class SphereRuntime: @unchecked Sendable {
         clipboardStore = ClipboardStore(database: database)
         web = WebToolProvider(policy: networkPolicy, store: networkStore, audit: audit)
         git = GitToolProvider(engine: engine, audit: audit)
-        system = SystemToolProvider(permissions: permissions, audit: audit)
+        system = SystemToolProvider(permissions: permissions, clipboardStore: clipboardStore, audit: audit)
         exec = ExecToolProvider(
             engine: engine,
             audit: audit,

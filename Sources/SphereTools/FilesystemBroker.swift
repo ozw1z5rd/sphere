@@ -141,27 +141,27 @@ public final class FilesystemBroker: ToolProvider {
         ]
     }
 
-    public func invoke(tool: String, arguments: JSONValue) async throws -> ToolOutcome {
+    public func invoke(tool: String, arguments: JSONValue, sessionId: String?) async throws -> ToolOutcome {
         switch tool {
-        case "fs_read": return try read(arguments)
-        case "fs_write": return try write(arguments)
-        case "fs_list": return try list(arguments)
-        case "fs_glob": return try glob(arguments)
-        case "fs_grep": return try grep(arguments)
-        case "fs_stat": return try stat(arguments)
-        case "fs_read_bytes": return try readBytes(arguments)
-        case "fs_edit": return try edit(arguments)
-        case "fs_select": return try select(arguments)
-        case "image_inspect": return try imageInspect(arguments)
+        case "fs_read": return try read(arguments, sessionId: sessionId)
+        case "fs_write": return try write(arguments, sessionId: sessionId)
+        case "fs_list": return try list(arguments, sessionId: sessionId)
+        case "fs_glob": return try glob(arguments, sessionId: sessionId)
+        case "fs_grep": return try grep(arguments, sessionId: sessionId)
+        case "fs_stat": return try stat(arguments, sessionId: sessionId)
+        case "fs_read_bytes": return try readBytes(arguments, sessionId: sessionId)
+        case "fs_edit": return try edit(arguments, sessionId: sessionId)
+        case "fs_select": return try select(arguments, sessionId: sessionId)
+        case "image_inspect": return try imageInspect(arguments, sessionId: sessionId)
         default: throw SphereError.protocolError("unknown filesystem tool '\(tool)'")
         }
     }
 
     // MARK: - Operations
 
-    private func read(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func read(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .read)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let data = try Data(contentsOf: url)
         guard data.count <= maximumReadBytes else {
@@ -179,10 +179,10 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: text)
     }
 
-    private func write(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func write(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
         let content = try requiredString("content", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .write)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .write)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data(content.utf8).write(to: url, options: .atomic)
@@ -190,9 +190,9 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: "Wrote \(content.utf8.count) bytes to \(url.path)")
     }
 
-    private func list(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func list(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .list)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .list)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let entries = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey])
         let lines = entries.map { entry -> String in
@@ -202,10 +202,10 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: lines.joined(separator: "\n"))
     }
 
-    private func glob(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func glob(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
         let pattern = try requiredString("pattern", in: arguments)
-        let grant = try engine.require(moduleId: moduleId, path: path, operation: .glob)
+        let grant = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .glob)
         let root = URL(fileURLWithPath: PathPolicy.normalize(path))
         let regex = try Self.globRegex(pattern)
         var matches: [String] = []
@@ -223,7 +223,7 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: matches.sorted().joined(separator: "\n"))
     }
 
-    private func grep(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func grep(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
         let pattern = try requiredString("pattern", in: arguments)
         let include = arguments["include"]?.stringValue
@@ -231,7 +231,7 @@ public final class FilesystemBroker: ToolProvider {
         let countOnly = arguments["count_only"]?.boolValue ?? false
         let maxResults = min(max(arguments["max_results"]?.numberValue.map(Int.init) ?? 200, 1), 500)
         let respectIgnore = arguments["respect_gitignore"]?.boolValue ?? true
-        let grant = try engine.require(moduleId: moduleId, path: path, operation: .grep)
+        let grant = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .grep)
         let root = URL(fileURLWithPath: PathPolicy.normalize(path))
         let regex = try NSRegularExpression(pattern: pattern)
         let includeRegex = try include.map(Self.globRegex)
@@ -351,18 +351,18 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: result.joined(separator: "\n"))
     }
 
-    private func stat(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func stat(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .read)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let report = try FileMetadata.report(path: url.path, url: url)
         audit.write("filesystem", "stat \(url.path)")
         return ToolOutcome(text: report)
     }
 
-    private func readBytes(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func readBytes(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .read)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let total = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
         let offset = max(arguments["offset"]?.numberValue.map(Int64.init) ?? 0, 0)
@@ -391,9 +391,9 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: lines.joined(separator: "\n"))
     }
 
-    private func edit(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func edit(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .edit)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .edit)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let data = try Data(contentsOf: url)
         guard data.count <= maximumEditBytes else {
@@ -432,10 +432,10 @@ public final class FilesystemBroker: ToolProvider {
         }
     }
 
-    private func select(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func select(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
         let selector = try requiredString("selector", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .read)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
 
         if selector.hasPrefix("lines:") {
@@ -455,9 +455,9 @@ public final class FilesystemBroker: ToolProvider {
         return ToolOutcome(text: "format: \(loaded.format)\nselector: \(selector)\n\n\(text)")
     }
 
-    private func imageInspect(_ arguments: JSONValue) throws -> ToolOutcome {
+    private func imageInspect(_ arguments: JSONValue, sessionId: String?) throws -> ToolOutcome {
         let path = try requiredString("path", in: arguments)
-        _ = try engine.require(moduleId: moduleId, path: path, operation: .read)
+        _ = try engine.require(moduleId: moduleId, sessionId: sessionId, path: path, operation: .read)
         let url = URL(fileURLWithPath: PathPolicy.normalize(path))
         let thumbnail = arguments["thumbnail"]?.boolValue ?? false
         let size = min(max(arguments["thumbnail_size"]?.numberValue.map(Int.init) ?? 256, 32), 512)
