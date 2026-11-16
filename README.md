@@ -131,8 +131,9 @@ disable each one (all enabled by default; disabled tools are hidden from the
 catalog and rejected if called) and shows the latest 200 tool calls. A dedicated
 **Clipboard** tab controls clipboard read/write, offers an optional local
 preview and shows the clipboard log. A dedicated **Logs** window (opened from
-Settings or the status bar) shows the last 200 file-access, network, tool and
-clipboard operations with the session number (`#N`).
+Settings or the status bar) shows the last 200 file-access, network, tool,
+clipboard, HTTP and Keychain operations in the same console view; database logs
+include the session number (`#N`).
 
 ## Principles
 

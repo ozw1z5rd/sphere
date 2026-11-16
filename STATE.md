@@ -116,7 +116,8 @@ Important note: the official MCP SDK requires Swift 6 / Xcode 16, so an
 - **Session numbers**: stable progressive `#N` badges, also recorded in every
   log (access, network, tools, clipboard).
 - **Logs window**: dedicated window with File Access / Network / Tools /
-  Clipboard logs, last 200 rows, opened from Settings and the status bar.
+  Clipboard (database) and HTTP / Keychain (file-backed) logs, last 200 rows,
+  opened from Settings and the status bar.
 - **Status bar**: clickable file/clipboard/network/tool counters.
 - **Collapsible AI responses** and streaming delta coalescing (~20 Hz).
 - **Default allow** ban list: URL (prefix), domain (+subdomains), IP/CIDR

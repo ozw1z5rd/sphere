@@ -262,11 +262,14 @@ show `—`.
 
 The **Logs** window is opened with:
 
-- **Settings → Diagnostica → Apri log accessi file / rete / uso tool / clipboard**;
+- **Settings → Diagnostica → Apri log HTTP / Keychain / accessi file / rete /
+  uso tool / clipboard**;
 - the status-bar icons: folder, clipboard, globe and wrench.
 
-It has a selector for **File Access / Network / Tools / Clipboard** and shows the
-last 200 global rows, with the session column.
+It has a selector for **File Access / Network / Tools / Clipboard / HTTP /
+Keychain** and shows the last 200 rows in the same console style. Database logs
+include the session column; HTTP and Keychain are read from their log files.
+The raw files remain available from **Apri cartella Logs**.
 
 ## Tools tab
 

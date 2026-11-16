@@ -117,6 +117,9 @@ is written to the audit log, and dispatch uses the winning tool's provider
 - `sphere.system`: `system_info` and clipboard read/write (logged directly in
   `clipboard_events` with session attribution, with a per-session counter in the
   status bar and a dedicated Clipboard tab).
+- **Logs window**: one window for File Access, Network, Tools and Clipboard
+  (database) plus HTTP and Keychain (file-backed, last 200 lines parsed into the
+  same console view).
 - `sphere.exec`: opt-in argv-only sandboxed command execution. Child processes
   run under `sandbox-exec` with network denied and writes limited to the
   granted root; see [PERMISSIONS.md](PERMISSIONS.md).

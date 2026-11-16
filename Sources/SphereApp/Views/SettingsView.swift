@@ -543,8 +543,8 @@ private struct DiagnosticsSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Apri log HTTP") { model.openLog(named: "http.log") }
-                    Button("Apri log Keychain") { model.openLog(named: "keychain.log") }
+                    Button("Apri log HTTP") { openLog(.http) }
+                    Button("Apri log Keychain") { openLog(.keychain) }
                     Button("Apri cartella Logs") { model.revealLogsFolder() }
                 }
                 HStack {

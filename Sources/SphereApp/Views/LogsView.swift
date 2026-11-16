@@ -49,6 +49,8 @@ struct LogsView: View {
         case .network: return "No requests recorded."
         case .tools: return "No tool activity yet."
         case .clipboard: return "No clipboard activity yet."
+        case .http: return "No HTTP log yet."
+        case .keychain: return "No keychain log yet."
         }
     }
 }

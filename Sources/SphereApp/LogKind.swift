@@ -6,6 +6,8 @@ public enum LogKind: String, CaseIterable, Identifiable {
     case network
     case tools
     case clipboard
+    case http
+    case keychain
 
     public var id: String { rawValue }
 
@@ -15,6 +17,8 @@ public enum LogKind: String, CaseIterable, Identifiable {
         case .network: return "Network"
         case .tools: return "Tools"
         case .clipboard: return "Clipboard"
+        case .http: return "HTTP"
+        case .keychain: return "Keychain"
         }
     }
 
@@ -24,6 +28,8 @@ public enum LogKind: String, CaseIterable, Identifiable {
         case .network: return "globe"
         case .tools: return "wrench.and.screwdriver"
         case .clipboard: return "doc.on.clipboard"
+        case .http: return "arrow.up.arrow.down"
+        case .keychain: return "key.fill"
         }
     }
 }

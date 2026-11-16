@@ -248,3 +248,8 @@
 "Apri log clipboard" = "Apri log clipboard";
 "Network requests in this session" = "Richieste di rete in questa sessione";
 "Tool calls in this session" = "Chiamate tool in questa sessione";
+
+"HTTP" = "HTTP";
+"Keychain" = "Keychain";
+"No HTTP log yet." = "Nessun log HTTP.";
+"No keychain log yet." = "Nessun log Keychain.";

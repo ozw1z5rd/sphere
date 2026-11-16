@@ -22,6 +22,8 @@ public final class AppModel: ObservableObject {
     @Published public var messages: [ChatMessage] = []
     @Published public var toolCalls: [ToolCallRecord] = []
     @Published public var clipboardEvents: [ClipboardEvent] = []
+    @Published public var httpLogLines: [LogLine] = []
+    @Published public var keychainLogLines: [LogLine] = []
     @Published public var clipboardAccessCount = 0
     @Published public var clipboardReadCount = 0
     @Published public var clipboardWriteCount = 0
@@ -124,6 +126,63 @@ public final class AppModel: ObservableObject {
         networkEvents = (try? runtime.networkStore.events(limit: 200)) ?? []
         toolUsage = (try? runtime.sessions.toolCalls(limit: 200)) ?? []
         clipboardEvents = (try? runtime.clipboardStore.events(limit: 200)) ?? []
+        httpLogLines = Self.tailLogFile(AppPaths.logs.appendingPathComponent("http.log"), status: .http)
+        keychainLogLines = Self.tailLogFile(AppPaths.logs.appendingPathComponent("keychain.log"), status: .keychain)
+    }
+
+    private static func tailLogFile(_ url: URL, status: LogKind) -> [LogLine] {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
+        defer { try? handle.close() }
+        let size = (try? handle.seekToEnd()) ?? 0
+        let maxBytes: UInt64 = 1_000_000
+        let offset = size > maxBytes ? size - maxBytes : 0
+        try? handle.seek(toOffset: offset)
+        guard let data = try? handle.readToEnd() else { return [] }
+        var content = String(decoding: data, as: UTF8.self)
+        if offset > 0, let newline = content.firstIndex(of: "\n") {
+            content = String(content[content.index(after: newline)...])
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let regex = try? NSRegularExpression(pattern: "^\\[([^\\]]+)\\] \\[([^\\]]+)\\] (.*)$")
+        let rawLines = Array(content.components(separatedBy: .newlines).suffix(200)).reversed()
+        return rawLines.enumerated().compactMap { index, raw -> LogLine? in
+            let range = NSRange(raw.startIndex..., in: raw)
+            guard let regex,
+                  let match = regex.firstMatch(in: raw, range: range),
+                  let timeRange = Range(match.range(at: 1), in: raw),
+                  let categoryRange = Range(match.range(at: 2), in: raw),
+                  let messageRange = Range(match.range(at: 3), in: raw),
+                  let timestamp = formatter.date(from: String(raw[timeRange])) else {
+                return nil
+            }
+            let category = String(raw[categoryRange])
+            let message = String(raw[messageRange])
+            let statusText: String
+            let color: Color
+            switch status {
+            case .http:
+                statusText = category == "request" ? "REQ" : "RESP"
+                color = message.hasPrefix("XX") ? .red : (category == "request" ? .blue : .green)
+            case .keychain:
+                statusText = category.uppercased()
+                if message.contains("failed") || message.contains("Impossibile") {
+                    color = .red
+                } else {
+                    color = .green
+                }
+            default:
+                statusText = category.uppercased()
+                color = .secondary
+            }
+            return LogLine(
+                id: "\(url.lastPathComponent)-\(index)-\(raw.hashValue)",
+                timestamp: timestamp,
+                status: statusText,
+                statusColor: color,
+                message: message
+            )
+        }
     }
 
     public func reloadClipboardEvents() {
@@ -476,6 +535,8 @@ public final class AppModel: ObservableObject {
         case .network: return networkLogLines
         case .tools: return toolUsageLogLines
         case .clipboard: return clipboardLogLines
+        case .http: return httpLogLines
+        case .keychain: return keychainLogLines
         }
     }
 

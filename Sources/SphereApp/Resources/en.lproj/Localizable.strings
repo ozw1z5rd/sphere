@@ -248,3 +248,8 @@
 "Apri log clipboard" = "Open clipboard log";
 "Network requests in this session" = "Network requests in this session";
 "Tool calls in this session" = "Tool calls in this session";
+
+"HTTP" = "HTTP";
+"Keychain" = "Keychain";
+"No HTTP log yet." = "No HTTP log yet.";
+"No keychain log yet." = "No keychain log yet.";
