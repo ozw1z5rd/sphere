@@ -516,3 +516,33 @@ final class LLMHistoryTests: XCTestCase {
         XCTAssertEqual(sanitized[2].toolCallId, "call_1")
     }
 }
+
+final class MarkdownPlainTextTests: XCTestCase {
+    func testHeadingsAndEmphasis() {
+        XCTAssertEqual(
+            MarkdownPlainText.plainText(from: "# Title\n\nHello **world**."),
+            "Title\n\nHello world."
+        )
+    }
+
+    func testListsAndLinks() {
+        XCTAssertEqual(
+            MarkdownPlainText.plainText(from: "- one\n- two\n\nSee [docs](https://example.com)."),
+            "• one\n• two\n\nSee docs."
+        )
+    }
+
+    func testCodeBlocksAndInlineCode() {
+        XCTAssertEqual(
+            MarkdownPlainText.plainText(from: "Use `code`.\n\n```swift\nlet x = 1\n```"),
+            "Use code.\n\nlet x = 1"
+        )
+    }
+
+    func testTable() {
+        XCTAssertEqual(
+            MarkdownPlainText.plainText(from: "| a | b |\n|---|---|\n| 1 | 2 |"),
+            "a | b\n1 | 2"
+        )
+    }
+}

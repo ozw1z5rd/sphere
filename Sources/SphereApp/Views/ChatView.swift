@@ -300,6 +300,9 @@ struct MessageRow: View {
     var onSpeak: (() -> Void)? = nil
 
     @State private var isCollapsed = false
+    @State private var isSelectable = false
+    @State private var isCopied = false
+    @State private var copyGeneration = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -315,8 +318,25 @@ struct MessageRow: View {
                     .buttonStyle(.borderless)
                     .help(Text("Read this message"))
                 }
+                if !message.content.isEmpty {
+                    Button {
+                        copyPlainText()
+                    } label: {
+                        Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(isCopied ? Text("Copied") : Text("Copy text"))
+                }
                 if message.role == .assistant, !message.content.isEmpty {
                     Spacer(minLength: 6)
+                    Button {
+                        isSelectable.toggle()
+                    } label: {
+                        Image(systemName: isSelectable ? "textformat" : "text.cursor")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.borderless)
+                    .help(isSelectable ? Text("Show Markdown") : Text("Selectable text"))
                     Button {
                         withAnimation(.easeInOut(duration: 0.15)) {
                             isCollapsed.toggle()
@@ -331,11 +351,20 @@ struct MessageRow: View {
             }
             if !message.content.isEmpty {
                 if isCollapsed {
-                    Text(message.content)
+                    Text(plainContent)
                         .font(model.messageFont(for: message.role))
                         .lineLimit(1)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                } else if message.role == .assistant, isSelectable {
+                    Text(plainContent)
+                        .font(model.messageFont(for: message.role))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(background)
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
                 } else {
                     content
                         .textSelection(.enabled)
@@ -354,6 +383,54 @@ struct MessageRow: View {
                         }
                     }
                 }
+            }
+        }
+        .contextMenu {
+            if !message.content.isEmpty {
+                Button("Copy text") { copyPlainText() }
+                if message.role == .assistant {
+                    Button("Copy Markdown") { copyMarkdown() }
+                }
+            }
+            if message.role == .assistant, !message.content.isEmpty {
+                Button(isSelectable ? "Show Markdown" : "Selectable text") {
+                    isSelectable.toggle()
+                }
+                Button(isCollapsed ? "Expand response" : "Collapse response") {
+                    isCollapsed.toggle()
+                }
+            }
+            if let onSpeak {
+                Divider()
+                Button("Read this message", action: onSpeak)
+            }
+        }
+    }
+
+    private var plainContent: String {
+        message.role == .assistant
+            ? MarkdownPlainText.plainText(from: message.content)
+            : message.content
+    }
+
+    private func copyPlainText() {
+        copyToPasteboard(plainContent)
+    }
+
+    private func copyMarkdown() {
+        copyToPasteboard(message.content)
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        isCopied = true
+        copyGeneration += 1
+        let generation = copyGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            if copyGeneration == generation {
+                isCopied = false
             }
         }
     }

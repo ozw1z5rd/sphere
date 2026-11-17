@@ -251,3 +251,9 @@
 "No keychain log yet." = "Nessun log Keychain.";
 
 "Generating…" = "Generazione…";
+
+"Copy text" = "Copia testo";
+"Copy Markdown" = "Copia Markdown";
+"Copied" = "Copiato";
+"Selectable text" = "Testo selezionabile";
+"Show Markdown" = "Mostra Markdown";

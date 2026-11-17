@@ -98,7 +98,11 @@ provider are ignored (e.g. `top_k` on OpenAI).
   code blocks) only once the assistant message is persisted, avoiding a full
   Markdown re-layout for every token.
 - Each AI response can be **collapsed** with the chevron in its header; a
-  one-line preview remains visible. Remote images are not loaded: the
+  one-line preview remains visible.
+- Every message has a **Copy** button (plain text). The context menu adds
+  **Copy Markdown** for AI responses. Use the **selectable text** toggle on an AI
+  response to render it as a single selectable `Text` (free selection across
+  paragraphs; Markdown formatting is not shown in this mode). Remote images are not loaded: the
   renderer uses only local assets, so the network ban list remains effective.
 - Messages remain stored in SQLite.
 - Tool calls are executed automatically according to the policy
